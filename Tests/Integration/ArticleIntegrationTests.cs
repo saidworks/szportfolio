@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PortfolioCMS.Data;
@@ -7,35 +6,13 @@ using PortfolioCMS.Models.Entities;
 
 namespace PortfolioCMS.Tests.Integration;
 
-public class ArticleIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class ArticleIntegrationTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
 
-    public ArticleIntegrationTests(WebApplicationFactory<Program> factory)
+    public ArticleIntegrationTests(TestWebApplicationFactory<Program> factory)
     {
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                // Remove the real database context
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                if (descriptor != null)
-                    services.Remove(descriptor);
-
-                // Add in-memory database for testing
-                services.AddDbContext<ApplicationDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}");
-                });
-
-                // Ensure database is created
-                var serviceProvider = services.BuildServiceProvider();
-                using var scope = serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                context.Database.EnsureCreated();
-            });
-        });
+        _factory = factory;
     }
 
     [Fact]

@@ -4,7 +4,7 @@ using PortfolioCMS.Models.Entities;
 
 namespace PortfolioCMS.Data;
 
-public class ApplicationDbContext : IdentityDbContext
+public class ApplicationDbContext : IdentityDbContext<User>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -40,6 +40,13 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany(a => a.Comments)
             .HasForeignKey(c => c.ArticleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure User-Article one-to-many relationship
+        builder.Entity<Article>()
+            .HasOne(a => a.User)
+            .WithMany(u => u.Articles)
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Configure indexes for better performance
         builder.Entity<Article>()
