@@ -25,7 +25,11 @@ public class Article
     [MaxLength(500)]
     public string? FeaturedImagePath { get; set; }
     
+    // Foreign key
+    public string? UserId { get; set; }
+    
     // Navigation properties
+    public virtual User? User { get; set; }
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
