@@ -24,21 +24,44 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         
         if (string.IsNullOrEmpty(connectionString))
         {
-            // Fallback connection string for design-time operations
+            // Fallback connection string for design-time operations (SQL Server)
             connectionString = "Server=(localdb)\\mssqllocaldb;Database=PortfolioCMS;Trusted_Connection=true;MultipleActiveResultSets=true";
         }
 
-        // Configure DbContext options
+        // Configure DbContext options based on connection string
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
+        
+        if (IsMySqlConnectionString(connectionString))
         {
-            sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
-        });
+            // Configure for MySQL (Development)
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
+            {
+                mysqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+                mysqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+            });
+        }
+        else
+        {
+            // Configure for SQL Server (Staging/Production)
+            optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
+            {
+                sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+            });
+        }
 
         return new ApplicationDbContext(optionsBuilder.Options);
+    }
+
+    private static bool IsMySqlConnectionString(string connectionString)
+    {
+        return connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase);
     }
 }

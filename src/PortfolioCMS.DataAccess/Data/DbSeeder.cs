@@ -13,15 +13,24 @@ public static class DbSeeder
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AspNetUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
 
         try
         {
-            // Ensure database is created
+            // Ensure database is created and migrations are applied
             await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully");
 
-            // Seed sample data (without user-dependent data for now)
-            await SeedSampleDataAsync(context, logger);
+            // Seed roles first
+            await SeedRolesAsync(roleManager, logger);
+
+            // Seed admin user
+            var adminUser = await SeedAdminUserAsync(userManager, logger);
+
+            // Seed sample data with admin user context
+            await SeedSampleDataAsync(context, adminUser?.Id, logger);
         }
         catch (Exception ex)
         {
@@ -52,7 +61,7 @@ public static class DbSeeder
         }
     }
 
-    private static async Task SeedAdminUserAsync(UserManager<AspNetUser> userManager, ILogger logger)
+    private static async Task<AspNetUser?> SeedAdminUserAsync(UserManager<AspNetUser> userManager, ILogger logger)
     {
         const string adminEmail = "admin@portfoliocms.com";
         const string adminPassword = "Admin123!";
@@ -76,16 +85,23 @@ public static class DbSeeder
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
                 logger.LogInformation("Created admin user: {Email}", adminEmail);
+                return adminUser;
             }
             else
             {
                 logger.LogError("Failed to create admin user: {Email}. Errors: {Errors}", 
                     adminEmail, string.Join(", ", result.Errors.Select(e => e.Description)));
+                return null;
             }
+        }
+        else
+        {
+            logger.LogInformation("Admin user already exists: {Email}", adminEmail);
+            return adminUser;
         }
     }
 
-    private static async Task SeedSampleDataAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedSampleDataAsync(ApplicationDbContext context, string? adminUserId, ILogger logger)
     {
         // Seed tags
         await SeedTagsAsync(context, logger);
@@ -93,8 +109,14 @@ public static class DbSeeder
         // Seed projects
         await SeedProjectsAsync(context, logger);
 
-        // Note: Articles will be seeded later when Identity is properly configured
-        // await SeedArticlesAsync(context, adminUserId, logger);
+        // Seed articles with admin user if available
+        if (!string.IsNullOrEmpty(adminUserId))
+        {
+            await SeedArticlesAsync(context, adminUserId, logger);
+        }
+
+        // Seed sample comments
+        await SeedSampleCommentsAsync(context, logger);
 
         await context.SaveChangesAsync();
         logger.LogInformation("Sample data seeded successfully");
@@ -318,5 +340,69 @@ dotnet run</code></pre>
         }
 
         logger.LogInformation("Seeded {Count} articles", articles.Length);
+    }
+
+    private static async Task SeedSampleCommentsAsync(ApplicationDbContext context, ILogger logger)
+    {
+        if (await context.Comments.AnyAsync())
+        {
+            return; // Comments already exist
+        }
+
+        // Get published articles to add comments to
+        var publishedArticles = await context.Articles
+            .Where(a => a.Status == ArticleStatus.Published)
+            .ToListAsync();
+
+        if (!publishedArticles.Any())
+        {
+            logger.LogInformation("No published articles found, skipping comment seeding");
+            return;
+        }
+
+        var comments = new List<Comment>();
+
+        foreach (var article in publishedArticles.Take(2)) // Add comments to first 2 articles
+        {
+            comments.AddRange(new[]
+            {
+                new Comment
+                {
+                    AuthorName = "John Developer",
+                    AuthorEmail = "john.dev@example.com",
+                    Content = "Great article! This really helped me understand the concepts better. Looking forward to more content like this.",
+                    SubmittedDate = DateTime.UtcNow.AddDays(-5),
+                    Status = CommentStatus.Approved,
+                    ArticleId = article.Id,
+                    IpAddress = "192.168.1.100",
+                    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                },
+                new Comment
+                {
+                    AuthorName = "Sarah Tech",
+                    AuthorEmail = "sarah.tech@example.com",
+                    Content = "Thanks for sharing this! I've been struggling with this topic and your explanation made it much clearer.",
+                    SubmittedDate = DateTime.UtcNow.AddDays(-3),
+                    Status = CommentStatus.Approved,
+                    ArticleId = article.Id,
+                    IpAddress = "10.0.0.50",
+                    UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                },
+                new Comment
+                {
+                    AuthorName = "Mike Student",
+                    AuthorEmail = "mike.student@example.com",
+                    Content = "This is exactly what I was looking for! Could you write a follow-up article about advanced scenarios?",
+                    SubmittedDate = DateTime.UtcNow.AddDays(-1),
+                    Status = CommentStatus.Pending,
+                    ArticleId = article.Id,
+                    IpAddress = "172.16.0.25",
+                    UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+                }
+            });
+        }
+
+        context.Comments.AddRange(comments);
+        logger.LogInformation("Seeded {Count} sample comments", comments.Count);
     }
 }

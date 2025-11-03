@@ -55,23 +55,19 @@
 
 
   - [x] 2.3 Implement repository pattern and Unit of Work
-
-
-
-
-
-
-
     - Create IRepository<T> interface and base repository implementation
     - Implement specific repositories (IArticleRepository, ICommentRepository, etc.)
     - Create IUnitOfWork interface and implementation for transaction management
-
-
     - _Requirements: 7.4, 8.3_
   
 
+  - [x] 2.4 Create and apply Azure SQL Database migrations
 
-  - [ ] 2.4 Create and apply Azure SQL Database migrations
+
+
+
+
+
     - Generate initial migration for all entities with Azure SQL optimizations
     - Create comprehensive seed data for initial admin user and sample content
     - Apply migrations and verify database schema in Azure SQL Database
