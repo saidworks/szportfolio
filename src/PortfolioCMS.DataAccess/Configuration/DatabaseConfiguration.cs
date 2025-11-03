@@ -22,23 +22,41 @@ public static class DatabaseConfiguration
                 "Ensure it's configured in appsettings.json or Azure Key Vault.");
         }
 
-        // Configure Entity Framework with Azure SQL Database optimizations
+        // Configure Entity Framework with database provider detection
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
+            if (IsMySqlConnectionString(connectionString))
             {
-                // Enable connection resiliency for Azure SQL Database
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null);
-                
-                // Configure command timeout for long-running operations
-                sqlOptions.CommandTimeout(30);
-                
-                // Enable multiple active result sets
-                sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-            });
+                // Configure for MySQL (Development)
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
+                {
+                    mysqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
+                    
+                    mysqlOptions.CommandTimeout(30);
+                    mysqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+                });
+            }
+            else
+            {
+                // Configure for SQL Server/Azure SQL Database (Staging/Production)
+                options.UseSqlServer(connectionString, sqlOptions =>
+                {
+                    // Enable connection resiliency for Azure SQL Database
+                    sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
+                    
+                    // Configure command timeout for long-running operations
+                    sqlOptions.CommandTimeout(30);
+                    
+                    // Enable multiple active result sets
+                    sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+                });
+            }
 
             // Configure logging and diagnostics
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
@@ -93,5 +111,11 @@ public static class DatabaseConfiguration
                 "Failed to seed database. " +
                 "Ensure the database is accessible and properly configured.", ex);
         }
+    }
+
+    private static bool IsMySqlConnectionString(string connectionString)
+    {
+        return connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase);
     }
 }

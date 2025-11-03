@@ -8,14 +8,13 @@
 [![Azure](https://img.shields.io/badge/Azure-Hosted-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**🤖 Built with [Kiro AI](https://kiro.ai) - Agentic IDE**  
-This project was architected and developed using Kiro, an AI-powered development environment that transforms requirements into production-ready code through intelligent agents.
+**🤖 Built with [Kiro AI] - Agentic IDE**  
+This project is a playground for experimenting with spec driven development using Kiro AI, an AI-powered development environment created by AWS. 
 
----
 
 ## 🎯 Overview
 
-Portfolio CMS is a professional-grade content management system designed for developers to showcase their work, publish technical articles, and engage with visitors. Built with modern .NET technologies and following clean architecture principles, it demonstrates enterprise-level development practices while remaining easy to deploy and maintain.
+Portfolio CMS is a content management system designed for developers to showcase their work, publish technical articles, and engage with visitors. Built with modern .NET technologies and following clean architecture principles, it demonstrates enterprise-level development practices while remaining easy to deploy and maintain.
 
 ### Key Highlights
 
@@ -33,3 +32,6 @@ Portfolio CMS is a professional-grade content management system designed for dev
 ### Multi-Project Solution Structure
 
 The application is organized into **three independent, deployable projects**:
+
+
+This is WIP Project and Document
