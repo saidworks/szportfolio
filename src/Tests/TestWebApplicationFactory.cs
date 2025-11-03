@@ -2,9 +2,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PortfolioCMS.DataAccess.Context;
-ies;Repositorccess.S.DataACMPortfoliosing u
-
 namespace PortfolioCMS.Tests;
 
 public class TestWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup> where TStartup : class
@@ -30,6 +29,15 @@ public class TestWebApplicationFactory<TStartup> : WebApplicationFactory<TStartu
             {
                 options.UseInMemoryDatabase($"InMemoryDbForTesting_{Guid.NewGuid()}");
             });
+        });
+
+        // Configure logging for testing
+        builder.ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddConsole();
+            logging.AddDebug();
+            logging.SetMinimumLevel(LogLevel.Information);
         });
 
         builder.UseEnvironment("Testing");
