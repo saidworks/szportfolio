@@ -2,17 +2,23 @@
 
 ## Introduction
 
-The Personal Portfolio CMS is a full-stack web application built with Blazor/.NET Core that enables a portfolio owner to manage and showcase their professional profile, projects, and technical articles. The system provides a public-facing portfolio website with blog functionality and an administrative interface for content management.
+The Personal Portfolio CMS is a production-ready, cloud-native application built with a three-project architecture: Frontend (Blazor), Data Access Layer, and API Backend. The system enables portfolio owners to manage and showcase their professional profile, projects, and technical articles through a secure, scalable, and observable platform hosted on Azure with comprehensive CI/CD pipeline and infrastructure as code.
 
 ## Glossary
 
-- **Portfolio_System**: The complete Personal Portfolio CMS application
+- **Portfolio_System**: The complete Personal Portfolio CMS application consisting of three independent projects
+- **Frontend_Project**: Blazor Server application handling user interface and presentation logic
+- **API_Project**: ASP.NET Core Web API backend providing RESTful services
+- **DataAccess_Project**: Entity Framework Core data access layer with repository pattern
 - **Admin_User**: The portfolio owner with full content management privileges
 - **Public_User**: Anonymous visitors who can view content and submit comments
 - **Article**: A blog post or technical article with rich text content
 - **Comment**: User-submitted feedback on articles that requires moderation
 - **Content_Item**: Any manageable piece of information (projects, education, experience, etc.)
 - **Media_Asset**: Uploaded images or files associated with content items
+- **CI_CD_Pipeline**: GitHub Actions workflow for automated build, test, and deployment
+- **Infrastructure_Code**: OpenTofu/Terraform definitions for Azure resources
+- **Observability_Stack**: Grafana Cloud and Azure Application Insights monitoring
 
 ## Requirements
 
@@ -90,8 +96,68 @@ The Personal Portfolio CMS is a full-stack web application built with Blazor/.NE
 
 #### Acceptance Criteria
 
-1. THE Portfolio_System SHALL use MySQL database version 8 or higher for data persistence
-2. THE Portfolio_System SHALL implement Entity Framework Core with database migrations
-3. THE Portfolio_System SHALL provide seed data for initial system setup
-4. THE Portfolio_System SHALL maintain data integrity through proper relationships and constraints
-5. THE Portfolio_System SHALL implement backup and recovery procedures for content protection
+1. THE DataAccess_Project SHALL use Azure SQL Database for data persistence
+2. THE DataAccess_Project SHALL implement Entity Framework Core with database migrations
+3. THE DataAccess_Project SHALL provide seed data for initial system setup
+4. THE DataAccess_Project SHALL maintain data integrity through proper relationships and constraints
+5. THE Portfolio_System SHALL implement automated backup and recovery procedures through Azure services
+
+### Requirement 8
+
+**User Story:** As a development team, I want a clean three-project architecture, so that the system is maintainable and scalable.
+
+#### Acceptance Criteria
+
+1. THE Frontend_Project SHALL contain only Blazor Server components and presentation logic
+2. THE API_Project SHALL contain only Web API controllers and business logic services
+3. THE DataAccess_Project SHALL contain only Entity Framework models, repositories, and data access logic
+4. THE Portfolio_System SHALL enforce clear separation of concerns between projects
+5. THE Portfolio_System SHALL use dependency injection to manage cross-project dependencies
+
+### Requirement 9
+
+**User Story:** As a DevOps engineer, I want automated CI/CD pipeline with infrastructure as code, so that deployments are reliable and repeatable.
+
+#### Acceptance Criteria
+
+1. THE CI_CD_Pipeline SHALL automatically build, test, and deploy all three projects
+2. THE Infrastructure_Code SHALL define all Azure resources using OpenTofu/Terraform
+3. THE CI_CD_Pipeline SHALL run on every pull request and main branch commit
+4. THE CI_CD_Pipeline SHALL deploy to staging environment for testing before production
+5. THE Infrastructure_Code SHALL be version controlled and reviewed before changes
+
+### Requirement 10
+
+**User Story:** As a security engineer, I want comprehensive security scanning and analysis, so that vulnerabilities are identified and addressed.
+
+#### Acceptance Criteria
+
+1. THE CI_CD_Pipeline SHALL integrate SonarCloud static code analysis on every build
+2. THE CI_CD_Pipeline SHALL run OWASP ZAP security scanning against deployed applications
+3. THE Portfolio_System SHALL implement automated vulnerability scanning for dependencies
+4. THE CI_CD_Pipeline SHALL fail builds when critical security issues are detected
+5. THE Portfolio_System SHALL maintain security compliance reports and remediation tracking
+
+### Requirement 11
+
+**User Story:** As a site reliability engineer, I want comprehensive observability and monitoring, so that system health and performance are continuously tracked.
+
+#### Acceptance Criteria
+
+1. THE Portfolio_System SHALL integrate with Grafana Cloud for metrics and alerting
+2. THE Portfolio_System SHALL send telemetry data to Azure Application Insights
+3. THE Observability_Stack SHALL monitor application performance, errors, and user behavior
+4. THE Portfolio_System SHALL provide real-time dashboards for system health monitoring
+5. THE Observability_Stack SHALL alert on critical issues and performance degradation
+
+### Requirement 12
+
+**User Story:** As a cloud architect, I want the system hosted on Azure with production-grade infrastructure, so that it meets enterprise reliability and scalability requirements.
+
+#### Acceptance Criteria
+
+1. THE Portfolio_System SHALL be hosted on Azure App Service with auto-scaling capabilities
+2. THE Portfolio_System SHALL use Azure SQL Database with automated backups and geo-replication
+3. THE Portfolio_System SHALL implement Azure CDN for static asset delivery
+4. THE Portfolio_System SHALL use Azure Key Vault for secrets management
+5. THE Portfolio_System SHALL implement Azure Application Gateway for load balancing and SSL termination
