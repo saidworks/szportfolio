@@ -2,8 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using PortfolioCMS.Components;
-using PortfolioCMS.Data;
-using PortfolioCMS.Models.Entities;
+using PortfolioCMS.DataAccess.Context;
+using PortfolioCMS.DataAccess.Entities;
+using PortfolioCMS.DataAccess.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,18 +12,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add Entity Framework and MySQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 21))));
+// Add DataAccess services (includes Entity Framework and SQL Server)
+builder.Services.AddDataAccessServices(builder.Configuration);
 
 // Add Identity services
-builder.Services.AddDefaultIdentity<User>(options => 
+builder.Services.AddDefaultIdentity<AspNetUser>(options => 
 {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
 })
@@ -82,17 +81,18 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Seed the database
+// Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        await DbSeeder.SeedAsync(scope.ServiceProvider);
+        await DatabaseConfiguration.EnsureDatabaseCreatedAsync(scope.ServiceProvider);
+        await DatabaseConfiguration.SeedDatabaseAsync(scope.ServiceProvider);
     }
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
+        logger.LogError(ex, "An error occurred while setting up the database.");
     }
 }
 

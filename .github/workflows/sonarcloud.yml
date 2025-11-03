@@ -1,0 +1,90 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  SOLUTION_PATH: './PortfolioCMS.sln'
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Install SonarCloud scanner
+      run: |
+        echo "📊 SonarCloud scanner installation would happen here"
+        echo "dotnet tool install --global dotnet-sonarscanner"
+        echo "Configure SONAR_TOKEN secret in repository settings"
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+    - name: Begin SonarCloud analysis
+      run: |
+        echo "🔍 SonarCloud analysis would begin here"
+        echo "dotnet sonarscanner begin /k:'your-project-key' /o:'your-organization' /d:sonar.token='\${{ secrets.SONAR_TOKEN }}' /d:sonar.host.url='https://sonarcloud.io' /d:sonar.cs.opencover.reportsPaths='**/coverage.opencover.xml'"
+
+    - name: Build solution
+      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+    - name: Run tests with coverage
+      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults/ -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    - name: End SonarCloud analysis
+      run: |
+        echo "📊 SonarCloud analysis would end here"
+        echo "dotnet sonarscanner end /d:sonar.token='\${{ secrets.SONAR_TOKEN }}'"
+
+    - name: SonarCloud Quality Gate check
+      run: |
+        echo "🚪 SonarCloud Quality Gate check would happen here"
+        echo "This step would fail the build if quality gate conditions are not met"
+
+# Configuration Instructions:
+# 1. Go to https://sonarcloud.io and create an account
+# 2. Create a new project and get your project key and organization
+# 3. Generate a SonarCloud token
+# 4. Add the following secrets to your GitHub repository:
+#    - SONAR_TOKEN: Your SonarCloud token
+# 5. Update the project key and organization in the workflow above
+# 6. Uncomment the actual SonarCloud commands and remove the echo statements
+
+# Quality Gate Configuration:
+# Configure quality gates in SonarCloud dashboard:
+# - Code Coverage: > 80%
+# - Duplicated Lines: < 3%
+# - Maintainability Rating: A
+# - Reliability Rating: A
+# - Security Rating: A
+# - Security Hotspots: Reviewed

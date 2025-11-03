@@ -1,0 +1,268 @@
+name: Security Scanning
+
+on:
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Target environment for security scan'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      scan_type:
+        description: 'Type of security scan'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+        - quick
+        - full
+        - baseline
+
+env:
+  STAGING_FRONTEND_URL: 'https://app-portfoliocms-frontend-staging.azurewebsites.net'
+  STAGING_API_URL: 'https://app-portfoliocms-api-staging.azurewebsites.net'
+  PRODUCTION_FRONTEND_URL: 'https://app-portfoliocms-frontend-prod.azurewebsites.net'
+  PRODUCTION_API_URL: 'https://app-portfoliocms-api-prod.azurewebsites.net'
+
+jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ./PortfolioCMS.sln
+
+    - name: Run dependency vulnerability scan (Placeholder)
+      run: |
+        echo "🔍 Dependency vulnerability scan would run here"
+        echo "Options to consider:"
+        echo "1. GitHub Security Advisories (built-in)"
+        echo "2. Snyk: https://github.com/snyk/actions"
+        echo "3. OWASP Dependency Check: https://github.com/dependency-check/Dependency-Check_Action"
+        echo "4. WhiteSource Bolt"
+        echo ""
+        echo "Example with Snyk:"
+        echo "- name: Run Snyk to check for vulnerabilities"
+        echo "  uses: snyk/actions/dotnet@master"
+        echo "  env:"
+        echo "    SNYK_TOKEN: \${{ secrets.SNYK_TOKEN }}"
+
+  static-code-analysis:
+    name: Static Code Analysis Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore and build
+      run: |
+        dotnet restore ./PortfolioCMS.sln
+        dotnet build ./PortfolioCMS.sln --configuration Release --no-restore
+
+    - name: Run security-focused static analysis (Placeholder)
+      run: |
+        echo "🔒 Security-focused static analysis would run here"
+        echo "This would integrate with SonarCloud security rules"
+        echo "Configure security-specific quality gates:"
+        echo "- Security Rating: A"
+        echo "- Security Hotspots: All reviewed"
+        echo "- Vulnerabilities: 0"
+
+  owasp-zap-scan:
+    name: OWASP ZAP Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set target URLs
+      id: set-urls
+      run: |
+        if [ "${{ github.event.inputs.target_environment }}" == "production" ]; then
+          echo "frontend_url=${{ env.PRODUCTION_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.PRODUCTION_API_URL }}" >> $GITHUB_OUTPUT
+        else
+          echo "frontend_url=${{ env.STAGING_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.STAGING_API_URL }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: OWASP ZAP Baseline Scan - Frontend (Placeholder)
+      run: |
+        echo "🕷️ OWASP ZAP baseline scan for Frontend would run here"
+        echo "Target: ${{ steps.set-urls.outputs.frontend_url }}"
+        echo "Scan type: ${{ github.event.inputs.scan_type || 'full' }}"
+        echo ""
+        echo "Example configuration:"
+        echo "- name: ZAP Scan"
+        echo "  uses: zaproxy/action-baseline@v0.10.0"
+        echo "  with:"
+        echo "    target: '${{ steps.set-urls.outputs.frontend_url }}'"
+        echo "    rules_file_name: '.zap/rules.tsv'"
+        echo "    cmd_options: '-a'"
+
+    - name: OWASP ZAP API Scan (Placeholder)
+      run: |
+        echo "🔌 OWASP ZAP API scan would run here"
+        echo "Target: ${{ steps.set-urls.outputs.api_url }}"
+        echo ""
+        echo "Example configuration:"
+        echo "- name: ZAP API Scan"
+        echo "  uses: zaproxy/action-api-scan@v0.7.0"
+        echo "  with:"
+        echo "    target: '${{ steps.set-urls.outputs.api_url }}/swagger/v1/swagger.json'"
+        echo "    format: openapi"
+        echo "    cmd_options: '-a'"
+
+    - name: Create ZAP configuration files (Placeholder)
+      run: |
+        echo "📝 Creating ZAP configuration files"
+        mkdir -p .zap
+        echo "Creating rules.tsv for custom security rules"
+        echo "Creating context files for authenticated scanning"
+
+  container-security-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: false  # Disabled until Docker containers are implemented
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker images
+      run: |
+        echo "🐳 Building Docker images for security scanning"
+        echo "docker build -t portfoliocms-frontend:latest -f src/PortfolioCMS.Frontend/Dockerfile ."
+        echo "docker build -t portfoliocms-api:latest -f src/PortfolioCMS.API/Dockerfile ."
+
+    - name: Run container security scan (Placeholder)
+      run: |
+        echo "🔍 Container security scan would run here"
+        echo "Options to consider:"
+        echo "1. Trivy: https://github.com/aquasecurity/trivy-action"
+        echo "2. Snyk Container: https://github.com/snyk/actions/tree/master/docker"
+        echo "3. Anchore: https://github.com/anchore/scan-action"
+
+  ssl-tls-scan:
+    name: SSL/TLS Configuration Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set target URLs
+      id: set-urls
+      run: |
+        if [ "${{ github.event.inputs.target_environment }}" == "production" ]; then
+          echo "frontend_url=${{ env.PRODUCTION_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.PRODUCTION_API_URL }}" >> $GITHUB_OUTPUT
+        else
+          echo "frontend_url=${{ env.STAGING_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.STAGING_API_URL }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: SSL/TLS Configuration Check (Placeholder)
+      run: |
+        echo "🔐 SSL/TLS configuration check would run here"
+        echo "Frontend URL: ${{ steps.set-urls.outputs.frontend_url }}"
+        echo "API URL: ${{ steps.set-urls.outputs.api_url }}"
+        echo ""
+        echo "Tools to consider:"
+        echo "1. testssl.sh"
+        echo "2. SSL Labs API"
+        echo "3. Custom SSL configuration validation"
+
+  security-headers-check:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set target URLs
+      id: set-urls
+      run: |
+        if [ "${{ github.event.inputs.target_environment }}" == "production" ]; then
+          echo "frontend_url=${{ env.PRODUCTION_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.PRODUCTION_API_URL }}" >> $GITHUB_OUTPUT
+        else
+          echo "frontend_url=${{ env.STAGING_FRONTEND_URL }}" >> $GITHUB_OUTPUT
+          echo "api_url=${{ env.STAGING_API_URL }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check security headers (Placeholder)
+      run: |
+        echo "🛡️ Security headers check would run here"
+        echo "Checking headers for:"
+        echo "- Content-Security-Policy"
+        echo "- X-Frame-Options"
+        echo "- X-Content-Type-Options"
+        echo "- Strict-Transport-Security"
+        echo "- Referrer-Policy"
+        echo "- Permissions-Policy"
+        echo ""
+        echo "Frontend URL: ${{ steps.set-urls.outputs.frontend_url }}"
+        echo "API URL: ${{ steps.set-urls.outputs.api_url }}"
+
+  generate-security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, static-code-analysis, owasp-zap-scan, ssl-tls-scan, security-headers-check]
+    if: always()
+    
+    steps:
+    - name: Collect security scan results
+      run: |
+        echo "📊 Collecting security scan results"
+        echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+        echo "Static Code Analysis: ${{ needs.static-code-analysis.result }}"
+        echo "OWASP ZAP Scan: ${{ needs.owasp-zap-scan.result }}"
+        echo "SSL/TLS Scan: ${{ needs.ssl-tls-scan.result }}"
+        echo "Security Headers Check: ${{ needs.security-headers-check.result }}"
+
+    - name: Generate security report (Placeholder)
+      run: |
+        echo "📋 Generating comprehensive security report"
+        echo "Report would include:"
+        echo "- Executive summary"
+        echo "- Vulnerability findings by severity"
+        echo "- Remediation recommendations"
+        echo "- Compliance status"
+        echo "- Trend analysis"
+
+    - name: Upload security report (Placeholder)
+      run: |
+        echo "📤 Uploading security report"
+        echo "Report would be uploaded to:"
+        echo "- GitHub Security tab"
+        echo "- Azure Security Center"
+        echo "- Internal security dashboard"
+
+# Configuration Instructions:
+# 1. Configure secrets for security scanning tools:
+#    - SNYK_TOKEN (if using Snyk)
+#    - Other tool-specific tokens
+# 2. Set up ZAP configuration files in .zap/ directory
+# 3. Configure notification channels for security alerts
+# 4. Set up security baseline and thresholds
+# 5. Integrate with security incident response procedures

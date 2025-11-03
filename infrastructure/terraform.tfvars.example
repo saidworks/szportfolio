@@ -1,0 +1,40 @@
+# Environment Configuration
+environment = "development"
+location    = "East US"
+
+# Resource Naming
+resource_group_name = "rg-portfoliocms-dev"
+app_service_plan_name = "asp-portfoliocms-dev"
+frontend_app_name = "app-portfoliocms-frontend-dev"
+api_app_name = "app-portfoliocms-api-dev"
+
+# SQL Database Configuration
+sql_server_name = "sql-portfoliocms-dev"
+sql_database_name = "sqldb-portfoliocms-dev"
+sql_admin_username = "sqladmin"
+sql_admin_password = "YourSecurePassword123!"
+sql_database_max_size_gb = 2
+sql_database_sku = "Basic"
+
+# Storage Account Configuration
+storage_account_name = "stportfoliocmsdev"
+
+# Key Vault Configuration
+key_vault_name = "kv-portfoliocms-dev"
+
+# Monitoring Configuration
+log_analytics_workspace_name = "law-portfoliocms-dev"
+log_analytics_retention_days = 30
+application_insights_name = "ai-portfoliocms-dev"
+
+# App Service Plan Configuration
+app_service_plan_sku = "B1"
+
+# Common Tags
+common_tags = {
+  Project     = "PortfolioCMS"
+  Environment = "development"
+  ManagedBy   = "Terraform"
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering"
+}
