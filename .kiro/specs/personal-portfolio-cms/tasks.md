@@ -54,7 +54,14 @@
   
 
 
-  - [ ] 2.3 Implement repository pattern and Unit of Work
+  - [x] 2.3 Implement repository pattern and Unit of Work
+
+
+
+
+
+
+
     - Create IRepository<T> interface and base repository implementation
     - Implement specific repositories (IArticleRepository, ICommentRepository, etc.)
     - Create IUnitOfWork interface and implementation for transaction management

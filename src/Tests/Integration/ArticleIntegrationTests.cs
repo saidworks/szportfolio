@@ -1,16 +1,17 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PortfolioCMS.API.Controllers;
 using PortfolioCMS.DataAccess.Context;
 using PortfolioCMS.DataAccess.Entities;
 
 namespace PortfolioCMS.Tests.Integration;
 
-public class ArticleIntegrationTests : IClassFixture<TestWebApplicationFactory<Program>>
+public class ArticleIntegrationTests : IClassFixture<TestWebApplicationFactory<ArticlesController>>
 {
-    private readonly TestWebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<ArticlesController> _factory;
 
-    public ArticleIntegrationTests(TestWebApplicationFactory<Program> factory)
+    public ArticleIntegrationTests(TestWebApplicationFactory<ArticlesController> factory)
     {
         _factory = factory;
     }
