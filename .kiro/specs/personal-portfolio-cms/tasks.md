@@ -48,10 +48,10 @@
   - [x] 2.2 Configure Entity Framework DbContext for Azure SQL
 
 
-    - Create ApplicationDbContext with Azure SQL Database optimizations
+    - Create ApplicationDbContext with Azure SQL Database Free tier optimizations
     - Configure entity relationships using Fluent API with proper indexing
-    - Set up connection string management with Azure Key Vault integration
-    - _Requirements: 7.1, 7.2, 12.4_
+    - Set up connection string management with Azure Key Vault integration using Managed Identity
+    - _Requirements: 7.1, 7.2, 7.6, 12.4, 12.6_
   
 
 
@@ -69,9 +69,9 @@
 
 
 
-    - Generate initial migration for all entities with Azure SQL optimizations
-    - Create comprehensive seed data for initial admin user and sample content
-    - Apply migrations and verify database schema in Azure SQL Database
+    - Generate initial migration for all entities with Azure SQL Free tier optimizations
+    - Create comprehensive seed data for initial admin user and sample content (within 32 MB limit)
+    - Apply migrations and verify database schema in Azure SQL Database Free tier
     - _Requirements: 7.2, 7.3_
 
 - [x] 3. Build API project with comprehensive observability
@@ -92,9 +92,10 @@
 
 
     - Configure ASP.NET Core Identity with Azure Active Directory integration
-    - Implement JWT token generation and validation with Azure Key Vault
+    - Implement JWT token generation and validation with secrets from Azure Key Vault
     - Create role-based authorization policies (Admin, Viewer)
-    - _Requirements: 3.1, 12.4_
+    - Configure Managed Identity for secure Key Vault access
+    - _Requirements: 3.1, 7.6, 12.4, 12.6_
   
 
 
@@ -150,30 +151,45 @@
     - Implement caching strategies for frequently accessed data
     - _Requirements: 8.4, 11.3_
 
-- [ ] 5. Implement Azure infrastructure with OpenTofu/Terraform
-  - [ ] 5.1 Create core Azure infrastructure modules
-    - Implement Azure Resource Group, App Service Plan, and App Service modules
-    - Create Azure SQL Database and SQL Server modules with geo-replication
-    - Add Azure Key Vault module for secrets management
-    - _Requirements: 9.2, 12.1, 12.2, 12.4_
+- [x] 5. Implement Azure infrastructure with OpenTofu/Terraform
+
+
+
+
+  - [x] 5.1 Create core Azure infrastructure modules
+
+
+    - Implement Azure Resource Group, App Service Plan, and App Service modules with system-assigned managed identity
+    - Create Azure SQL Database Free tier and SQL Server modules (32 MB storage limit)
+    - Add Azure Key Vault module for secrets management with managed identity access policies
+    - Configure Key Vault to store database passwords and connection strings
+    - _Requirements: 7.6, 9.2, 12.1, 12.2, 12.4, 12.6_
   
-  - [ ] 5.2 Set up Azure networking and security infrastructure
+
+
+  - [x] 5.2 Set up Azure networking and security infrastructure
+
     - Implement Azure Application Gateway module with WAF protection
     - Create Azure CDN module for static asset delivery
     - Add Azure Storage Account module for media files and Terraform state
+
     - _Requirements: 12.3, 12.5_
   
-  - [ ] 5.3 Configure monitoring and observability infrastructure
+  - [x] 5.3 Configure monitoring and observability infrastructure
+
     - Create Azure Application Insights module with custom dashboards
     - Set up Azure Monitor and Log Analytics workspace
     - Configure Grafana Cloud integration and alerting rules
     - _Requirements: 11.1, 11.2, 11.4, 11.5_
   
-  - [ ] 5.4 Implement environment-specific configurations
-    - Create development, staging, and production environment configurations
-    - Set up Terraform workspaces and variable management
+
+  - [x] 5.4 Implement environment-specific configurations
+
+    - Create development (Free tier), staging (Basic tier), and production (Standard tier) environment configurations
+    - Set up Terraform workspaces and variable management for different SQL tiers
     - Configure automated infrastructure deployment in CI/CD pipeline
-    - _Requirements: 9.4, 9.5_
+    - Document manual Azure CLI steps for Key Vault secret initialization
+    - _Requirements: 7.6, 9.4, 9.5, 12.6_
 
 - [ ] 6. Implement comprehensive security measures
   - [ ] 6.1 Configure multi-layer security in API project
@@ -183,10 +199,11 @@
     - _Requirements: 10.3, 10.4_
   
   - [ ] 6.2 Set up Azure security services integration
-    - Integrate Azure Key Vault for secrets and certificate management
+    - Integrate Azure Key Vault for secrets and certificate management using Managed Identity
+    - Store all sensitive credentials (database passwords, connection strings, API keys) in Key Vault
     - Configure Azure Active Directory authentication and authorization
     - Implement Azure Application Gateway WAF rules and policies
-    - _Requirements: 12.4, 12.5_
+    - _Requirements: 7.6, 12.4, 12.5, 12.6_
   
   - [ ] 6.3 Add security scanning and compliance
     - Configure SonarCloud static code analysis with security rules
@@ -360,10 +377,12 @@
     - _Requirements: 8.4, 8.5, All requirements_
   
   - [ ] 12.2 Deploy to Azure with full infrastructure
-    - Execute Terraform deployment to create complete Azure infrastructure
-    - Deploy all three projects to Azure App Service with proper configuration
-    - Configure Azure SQL Database with production settings and backups
-    - _Requirements: 9.5, 12.1, 12.2, 12.5_
+    - Execute manual Azure CLI steps to initialize Key Vault secrets for database password
+    - Execute Terraform deployment to create complete Azure infrastructure with Free tier SQL Database
+    - Deploy all three projects to Azure App Service with managed identity configuration
+    - Configure Azure SQL Database Free tier with automated backups (7-day retention)
+    - Verify Key Vault integration and secret retrieval using managed identity
+    - _Requirements: 7.6, 9.5, 12.1, 12.2, 12.5, 12.6_
   
   - [ ] 12.3 Configure production monitoring and alerting
     - Activate all Grafana Cloud dashboards and alerting rules

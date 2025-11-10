@@ -96,11 +96,12 @@ The Personal Portfolio CMS is a production-ready, cloud-native application built
 
 #### Acceptance Criteria
 
-1. THE DataAccess_Project SHALL use Azure SQL Database for data persistence
+1. THE DataAccess_Project SHALL use Azure SQL Database Free tier for data persistence
 2. THE DataAccess_Project SHALL implement Entity Framework Core with database migrations
 3. THE DataAccess_Project SHALL provide seed data for initial system setup
 4. THE DataAccess_Project SHALL maintain data integrity through proper relationships and constraints
 5. THE Portfolio_System SHALL implement automated backup and recovery procedures through Azure services
+6. THE Portfolio_System SHALL store database credentials in Azure Key Vault for secure access
 
 ### Requirement 8
 
@@ -157,7 +158,8 @@ The Personal Portfolio CMS is a production-ready, cloud-native application built
 #### Acceptance Criteria
 
 1. THE Portfolio_System SHALL be hosted on Azure App Service with auto-scaling capabilities
-2. THE Portfolio_System SHALL use Azure SQL Database with automated backups and geo-replication
+2. THE Portfolio_System SHALL use Azure SQL Database Free tier with automated backups
 3. THE Portfolio_System SHALL implement Azure CDN for static asset delivery
-4. THE Portfolio_System SHALL use Azure Key Vault for secrets management
+4. THE Portfolio_System SHALL use Azure Key Vault for secrets management including database passwords and connection strings
 5. THE Portfolio_System SHALL implement Azure Application Gateway for load balancing and SSL termination
+6. THE Portfolio_System SHALL retrieve all sensitive credentials from Azure Key Vault at runtime using managed identity

@@ -124,6 +124,106 @@ output "application_insights_instrumentation_key" {
   sensitive   = true
 }
 
+output "application_insights_app_id" {
+  description = "The App ID of Application Insights"
+  value       = azurerm_application_insights.main.app_id
+}
+
+# Monitoring and Alerting Outputs
+output "action_group_id" {
+  description = "The ID of the monitoring action group"
+  value       = azurerm_monitor_action_group.main.id
+}
+
+output "action_group_name" {
+  description = "The name of the monitoring action group"
+  value       = azurerm_monitor_action_group.main.name
+}
+
+output "frontend_webtest_id" {
+  description = "The ID of the frontend web test"
+  value       = azurerm_application_insights_standard_web_test.frontend.id
+}
+
+output "api_webtest_id" {
+  description = "The ID of the API web test"
+  value       = azurerm_application_insights_standard_web_test.api.id
+}
+
+# Managed Identity Outputs
+output "frontend_app_identity_principal_id" {
+  description = "The principal ID of the Frontend App Service managed identity"
+  value       = azurerm_linux_web_app.frontend.identity[0].principal_id
+}
+
+output "api_app_identity_principal_id" {
+  description = "The principal ID of the API App Service managed identity"
+  value       = azurerm_linux_web_app.api.identity[0].principal_id
+}
+
+output "frontend_app_identity_tenant_id" {
+  description = "The tenant ID of the Frontend App Service managed identity"
+  value       = azurerm_linux_web_app.frontend.identity[0].tenant_id
+}
+
+output "api_app_identity_tenant_id" {
+  description = "The tenant ID of the API App Service managed identity"
+  value       = azurerm_linux_web_app.api.identity[0].tenant_id
+}
+
+# CDN Outputs
+output "cdn_profile_name" {
+  description = "The name of the CDN Profile"
+  value       = azurerm_cdn_profile.main.name
+}
+
+output "cdn_frontend_endpoint_url" {
+  description = "The URL of the CDN endpoint for the frontend"
+  value       = "https://${azurerm_cdn_endpoint.frontend.host_name}"
+}
+
+output "cdn_media_endpoint_url" {
+  description = "The URL of the CDN endpoint for media files"
+  value       = "https://${azurerm_cdn_endpoint.media.host_name}"
+}
+
+output "cdn_frontend_endpoint_fqdn" {
+  description = "The FQDN of the CDN endpoint for the frontend"
+  value       = azurerm_cdn_endpoint.frontend.fqdn
+}
+
+output "cdn_media_endpoint_fqdn" {
+  description = "The FQDN of the CDN endpoint for media files"
+  value       = azurerm_cdn_endpoint.media.fqdn
+}
+
+# Application Gateway Outputs
+output "application_gateway_public_ip" {
+  description = "The public IP address of the Application Gateway"
+  value       = var.enable_application_gateway ? azurerm_public_ip.appgw[0].ip_address : null
+}
+
+output "application_gateway_fqdn" {
+  description = "The FQDN of the Application Gateway"
+  value       = var.enable_application_gateway ? azurerm_public_ip.appgw[0].fqdn : null
+}
+
+output "application_gateway_id" {
+  description = "The ID of the Application Gateway"
+  value       = var.enable_application_gateway ? azurerm_application_gateway.main[0].id : null
+}
+
+# Virtual Network Outputs
+output "vnet_id" {
+  description = "The ID of the Virtual Network"
+  value       = var.enable_application_gateway ? azurerm_virtual_network.main[0].id : null
+}
+
+output "vnet_name" {
+  description = "The name of the Virtual Network"
+  value       = var.enable_application_gateway ? azurerm_virtual_network.main[0].name : null
+}
+
 # Environment Information
 output "environment" {
   description = "The deployment environment"

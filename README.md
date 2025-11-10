@@ -306,6 +306,189 @@ dotnet tool update --global dotnet-ef
 
 ---
 
+## ☁️ Azure Deployment
+
+### Prerequisites for Azure Deployment
+
+1. **Azure CLI** - [Install Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+2. **OpenTofu/Terraform** - [Install OpenTofu](https://opentofu.org/docs/intro/install/)
+3. **Active Azure Subscription** with appropriate permissions
+
+### 🔐 Critical: Key Vault Setup (Required Before Deployment)
+
+⚠️ **IMPORTANT**: Before deploying infrastructure, you must manually create Azure Key Vault and store the database password. This is a security best practice to avoid storing sensitive credentials in code or Terraform state.
+
+#### Step 1: Generate Secure Database Password
+
+```bash
+# Windows PowerShell
+$password = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | ForEach-Object {[char]$_})
+echo $password
+
+# Save this password securely - you'll need it for the next steps
+```
+
+#### Step 2: Create Key Vault and Store Credentials
+
+```bash
+# Login to Azure
+az login
+
+# Set variables (customize these)
+$RESOURCE_GROUP="rg-portfoliocms-dev"
+$LOCATION="eastus"
+$KEY_VAULT_NAME="kv-portfoliocms-dev"  # Must be globally unique
+$SQL_ADMIN_PASSWORD="<your-secure-password-from-step-1>"
+
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Create Key Vault
+az keyvault create `
+  --name $KEY_VAULT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --location $LOCATION `
+  --enable-rbac-authorization false `
+  --enabled-for-deployment true `
+  --enabled-for-template-deployment true
+
+# Store SQL admin password in Key Vault
+az keyvault secret set `
+  --vault-name $KEY_VAULT_NAME `
+  --name "SqlAdminPassword" `
+  --value $SQL_ADMIN_PASSWORD
+
+# Verify the secret was created
+az keyvault secret show `
+  --vault-name $KEY_VAULT_NAME `
+  --name "SqlAdminPassword" `
+  --query "value" `
+  --output tsv
+```
+
+#### Step 3: Grant Your Account Access to Key Vault
+
+```bash
+# Get your Azure AD user object ID
+$USER_OBJECT_ID=$(az ad signed-in-user show --query id --output tsv)
+
+# Grant yourself access to manage secrets
+az keyvault set-policy `
+  --name $KEY_VAULT_NAME `
+  --object-id $USER_OBJECT_ID `
+  --secret-permissions get list set delete purge recover
+```
+
+### 🚀 Deploy Infrastructure with Terraform
+
+After completing the Key Vault setup:
+
+```bash
+# Navigate to infrastructure directory
+cd infrastructure
+
+# Initialize Terraform
+tofu init
+
+# Retrieve password from Key Vault and set as environment variable
+$SQL_PASSWORD=$(az keyvault secret show `
+  --vault-name "kv-portfoliocms-dev" `
+  --name "SqlAdminPassword" `
+  --query "value" `
+  --output tsv)
+$env:TF_VAR_sql_admin_password=$SQL_PASSWORD
+
+# Plan deployment (development environment)
+tofu plan -var-file="environments/development/terraform.tfvars"
+
+# Apply deployment
+tofu apply -var-file="environments/development/terraform.tfvars"
+```
+
+### 🔑 Configure Managed Identity Access
+
+After Terraform creates the App Services, grant them access to Key Vault:
+
+```bash
+# Get the App Service managed identity principal IDs
+$API_PRINCIPAL_ID=$(az webapp identity show `
+  --name "app-portfoliocms-api-dev" `
+  --resource-group "rg-portfoliocms-dev" `
+  --query principalId `
+  --output tsv)
+
+$FRONTEND_PRINCIPAL_ID=$(az webapp identity show `
+  --name "app-portfoliocms-frontend-dev" `
+  --resource-group "rg-portfoliocms-dev" `
+  --query principalId `
+  --output tsv)
+
+# Grant API App Service access to Key Vault secrets
+az keyvault set-policy `
+  --name "kv-portfoliocms-dev" `
+  --object-id $API_PRINCIPAL_ID `
+  --secret-permissions get list
+
+# Grant Frontend App Service access to Key Vault secrets
+az keyvault set-policy `
+  --name "kv-portfoliocms-dev" `
+  --object-id $FRONTEND_PRINCIPAL_ID `
+  --secret-permissions get list
+```
+
+### 📋 Azure Resources Created
+
+The deployment creates the following Azure resources:
+
+- **App Service Plan** (B1 tier for development)
+- **App Services** (2) - Frontend and API with system-assigned managed identity
+- **Azure SQL Database** - Free tier (32 MB storage, $0/month)
+- **SQL Server** - Database server
+- **Key Vault** - Stores database passwords and connection strings
+- **Storage Account** - Media file storage
+- **Application Insights** - Application monitoring
+- **Log Analytics Workspace** - Centralized logging
+
+**Estimated Monthly Cost (Development):** ~$15-20/month
+
+### 🔄 Rotating Database Password
+
+To rotate the database password securely:
+
+```bash
+# 1. Generate new password
+$NEW_PASSWORD = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | ForEach-Object {[char]$_})
+
+# 2. Update SQL Server password
+az sql server update `
+  --resource-group "rg-portfoliocms-dev" `
+  --name "sql-portfoliocms-dev" `
+  --admin-password $NEW_PASSWORD
+
+# 3. Update Key Vault secret
+az keyvault secret set `
+  --vault-name "kv-portfoliocms-dev" `
+  --name "SqlAdminPassword" `
+  --value $NEW_PASSWORD
+
+# 4. Restart App Services to pick up new password
+az webapp restart --name "app-portfoliocms-api-dev" --resource-group "rg-portfoliocms-dev"
+az webapp restart --name "app-portfoliocms-frontend-dev" --resource-group "rg-portfoliocms-dev"
+```
+
+### 📚 Detailed Infrastructure Documentation
+
+For complete infrastructure documentation, including:
+- Detailed Azure CLI commands
+- Troubleshooting guide
+- Cost optimization tips
+- Environment management
+- CI/CD pipeline setup
+
+See: **[infrastructure/README.md](infrastructure/README.md)**
+
+---
+
 ## 📁 Project Structure
 
 ```

@@ -98,15 +98,16 @@ graph TB
 
 #### DataAccess Project
 - **ORM**: Entity Framework Core 8.0
-- **Database**: Azure SQL Database
+- **Database**: Azure SQL Database Free tier (32 MB storage)
 - **Patterns**: Repository and Unit of Work patterns
 - **Migrations**: EF Core Code-First migrations
 
 #### Azure Infrastructure
 - **Hosting**: Azure App Service (Linux containers)
-- **Database**: Azure SQL Database with geo-replication
+- **Database**: Azure SQL Database Free tier (32 MB storage limit)
 - **CDN**: Azure CDN for static assets
-- **Security**: Azure Key Vault for secrets management
+- **Security**: Azure Key Vault for secrets management (database passwords, connection strings, API keys)
+- **Identity**: Managed Identity for secure Key Vault access without storing credentials
 - **Load Balancing**: Azure Application Gateway
 - **Storage**: Azure Blob Storage for media files
 
@@ -646,9 +647,34 @@ jobs:
 
 #### Azure Security Services
 - **Azure Key Vault**: Secrets, certificates, and encryption keys management
+  - Database administrator password stored as secret
+  - SQL connection strings stored as secrets
+  - Storage account connection strings stored as secrets
+  - Application secrets and API keys stored as secrets
+- **Managed Identity**: System-assigned managed identity for App Services to access Key Vault
 - **Azure Application Gateway**: WAF protection and SSL termination
 - **Azure Active Directory**: Identity and access management integration
 - **Azure Security Center**: Continuous security monitoring
+
+#### Key Vault Integration Pattern
+```csharp
+// PortfolioCMS.API/Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Key Vault integration using Managed Identity
+if (!builder.Environment.IsDevelopment())
+{
+    var keyVaultUri = builder.Configuration["KeyVault:VaultUri"];
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUri),
+        new DefaultAzureCredential());
+}
+
+// Connection string retrieved from Key Vault at runtime
+var connectionString = builder.Configuration["SqlConnectionString"];
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+```
 
 #### Application Security
 - **Authentication**: ASP.NET Core Identity with JWT tokens
@@ -750,6 +776,11 @@ module "app_service" {
   resource_group_name = var.resource_group_name
   app_service_plan_id = module.app_service_plan.id
   
+  # Enable system-assigned managed identity
+  identity {
+    type = "SystemAssigned"
+  }
+  
   app_settings = {
     "ApplicationInsights__ConnectionString" = module.application_insights.connection_string
     "KeyVault__VaultUri" = module.key_vault.vault_uri
@@ -763,12 +794,44 @@ module "sql_database" {
   sql_server_name     = var.sql_server_name
   database_name       = var.database_name
   
-  backup_retention_days = 35
-  geo_redundant_backup  = true
+  # Use Free tier for cost optimization
+  sku_name = "Free"
+  max_size_gb = 0.032  # 32 MB limit for Free tier
+  
+  backup_retention_days = 7  # Free tier supports 7 days
+}
+
+module "key_vault" {
+  source = "./modules/key-vault"
+  
+  resource_group_name = var.resource_group_name
+  key_vault_name      = var.key_vault_name
+  
+  # Grant App Service managed identity access to Key Vault
+  access_policies = [
+    {
+      object_id = module.app_service.identity_principal_id
+      secret_permissions = ["Get", "List"]
+    }
+  ]
+}
+
+# Store database password in Key Vault (manual setup required)
+# Note: Initial password must be set via Azure CLI before first deployment
+resource "azurerm_key_vault_secret" "sql_admin_password" {
+  name         = "SqlAdminPassword"
+  value        = var.sql_admin_password  # Retrieved from Key Vault or environment
+  key_vault_id = module.key_vault.id
 }
 ```
 
 ### Environment Management
-- **Development**: Single-region deployment with basic monitoring
-- **Staging**: Production-like environment for integration testing
-- **Production**: Multi-region deployment with full observability stack
+- **Development**: Single-region deployment with Azure SQL Database Free tier
+- **Staging**: Production-like environment with Basic SQL tier for testing
+- **Production**: Multi-region deployment with Standard SQL tier and full observability stack
+
+### Manual Setup Requirements
+Some security-critical operations must be performed manually via Azure CLI:
+1. Initial Key Vault secret creation for database password
+2. Managed identity access policy configuration
+3. Service principal setup for CI/CD pipelines
