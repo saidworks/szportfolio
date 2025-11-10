@@ -179,12 +179,12 @@ output "cdn_profile_name" {
 
 output "cdn_frontend_endpoint_url" {
   description = "The URL of the CDN endpoint for the frontend"
-  value       = "https://${azurerm_cdn_endpoint.frontend.host_name}"
+  value       = "https://${azurerm_cdn_endpoint.frontend.fqdn}"
 }
 
 output "cdn_media_endpoint_url" {
   description = "The URL of the CDN endpoint for media files"
-  value       = "https://${azurerm_cdn_endpoint.media.host_name}"
+  value       = "https://${azurerm_cdn_endpoint.media.fqdn}"
 }
 
 output "cdn_frontend_endpoint_fqdn" {
