@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- TODO: Upgrade to net10.0 when .NET 10 is released -->
+    <TargetFramework>net9.0</TargetFramework>
+    <!-- TODO: Upgrade to C# 14 when available with .NET 10 -->
+    <LangVersion>preview</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsAspireHost>true</IsAspireHost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+    <PackageReference Include="Aspire.Hosting.Azure.KeyVault" Version="9.0.0" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PortfolioCMS.ServiceDefaults\PortfolioCMS.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\PortfolioCMS.API\PortfolioCMS.API.csproj" />
+    <ProjectReference Include="..\PortfolioCMS.Frontend\PortfolioCMS.Frontend.csproj" />
+  </ItemGroup>
+
+</Project>

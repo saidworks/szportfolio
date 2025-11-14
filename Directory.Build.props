@@ -1,6 +1,9 @@
 <Project>
   <PropertyGroup>
+    <!-- TODO: Upgrade to net10.0 when .NET 10 is released -->
     <TargetFramework>net9.0</TargetFramework>
+    <!-- TODO: Upgrade to C# 14 when available with .NET 10 -->
+    <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

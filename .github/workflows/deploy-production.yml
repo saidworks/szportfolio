@@ -1,323 +1,323 @@
-name: Deploy to Production
+# name: Deploy to Production
 
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-        - production
-      confirm_deployment:
-        description: 'Confirm production deployment (type "DEPLOY" to confirm)'
-        required: true
-        type: string
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       environment:
+#         description: 'Deployment environment'
+#         required: true
+#         default: 'production'
+#         type: choice
+#         options:
+#         - production
+#       confirm_deployment:
+#         description: 'Confirm production deployment (type "DEPLOY" to confirm)'
+#         required: true
+#         type: string
 
-env:
-  DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './PortfolioCMS.sln'
-  AZURE_RESOURCE_GROUP: 'rg-portfoliocms-prod'
-  FRONTEND_APP_NAME: 'app-portfoliocms-frontend-prod'
-  API_APP_NAME: 'app-portfoliocms-api-prod'
+# env:
+#   DOTNET_VERSION: '9.0.x'
+#   SOLUTION_PATH: './PortfolioCMS.sln'
+#   AZURE_RESOURCE_GROUP: 'rg-portfoliocms-prod'
+#   FRONTEND_APP_NAME: 'app-portfoliocms-frontend-prod'
+#   API_APP_NAME: 'app-portfoliocms-api-prod'
 
-jobs:
-  validate-deployment:
-    name: Validate Deployment Request
-    runs-on: ubuntu-latest
+# jobs:
+#   validate-deployment:
+#     name: Validate Deployment Request
+#     runs-on: ubuntu-latest
     
-    steps:
-    - name: Validate confirmation
-      if: github.event.inputs.confirm_deployment != 'DEPLOY'
-      run: |
-        echo "❌ Deployment confirmation failed!"
-        echo "You must type 'DEPLOY' to confirm production deployment"
-        exit 1
+#     steps:
+#     - name: Validate confirmation
+#       if: github.event.inputs.confirm_deployment != 'DEPLOY'
+#       run: |
+#         echo "❌ Deployment confirmation failed!"
+#         echo "You must type 'DEPLOY' to confirm production deployment"
+#         exit 1
 
-    - name: Validate branch
-      if: github.ref != 'refs/heads/main'
-      run: |
-        echo "❌ Production deployments can only be triggered from main branch!"
-        echo "Current branch: ${{ github.ref }}"
-        exit 1
+#     - name: Validate branch
+#       if: github.ref != 'refs/heads/main'
+#       run: |
+#         echo "❌ Production deployments can only be triggered from main branch!"
+#         echo "Current branch: ${{ github.ref }}"
+#         exit 1
 
-    - name: Deployment approved
-      run: |
-        echo "✅ Production deployment approved"
-        echo "Environment: ${{ github.event.inputs.environment }}"
-        echo "Triggered by: ${{ github.actor }}"
-        echo "Branch: ${{ github.ref }}"
+#     - name: Deployment approved
+#       run: |
+#         echo "✅ Production deployment approved"
+#         echo "Environment: ${{ github.event.inputs.environment }}"
+#         echo "Triggered by: ${{ github.actor }}"
+#         echo "Branch: ${{ github.ref }}"
 
-  pre-production-checks:
-    name: Pre-production Checks
-    runs-on: ubuntu-latest
-    needs: validate-deployment
+#   pre-production-checks:
+#     name: Pre-production Checks
+#     runs-on: ubuntu-latest
+#     needs: validate-deployment
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore and build
-      run: |
-        dotnet restore ${{ env.SOLUTION_PATH }}
-        dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+#     - name: Restore and build
+#       run: |
+#         dotnet restore ${{ env.SOLUTION_PATH }}
+#         dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    - name: Run full test suite
-      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal
+#     - name: Run full test suite
+#       run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal
 
-    - name: Security scan (placeholder)
-      run: |
-        echo "🔒 Comprehensive security scan would run here"
-        echo "All security checks must pass before production deployment"
+#     - name: Security scan (placeholder)
+#       run: |
+#         echo "🔒 Comprehensive security scan would run here"
+#         echo "All security checks must pass before production deployment"
 
-    - name: Performance baseline check
-      run: |
-        echo "⚡ Performance baseline check would run here"
-        echo "Ensure performance meets production requirements"
+#     - name: Performance baseline check
+#       run: |
+#         echo "⚡ Performance baseline check would run here"
+#         echo "Ensure performance meets production requirements"
 
-  backup-production:
-    name: Backup Production Environment
-    runs-on: ubuntu-latest
-    needs: pre-production-checks
+#   backup-production:
+#     name: Backup Production Environment
+#     runs-on: ubuntu-latest
+#     needs: pre-production-checks
     
-    steps:
-    - name: Azure Login (Placeholder)
-      run: |
-        echo "🔐 Azure login would happen here"
+#     steps:
+#     - name: Azure Login (Placeholder)
+#       run: |
+#         echo "🔐 Azure login would happen here"
 
-    - name: Backup production database
-      run: |
-        echo "💾 Production database backup would run here"
-        echo "az sql db export --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --server sql-portfoliocms-prod --name sqldb-portfoliocms-prod --storage-uri 'backup-uri'"
+#     - name: Backup production database
+#       run: |
+#         echo "💾 Production database backup would run here"
+#         echo "az sql db export --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --server sql-portfoliocms-prod --name sqldb-portfoliocms-prod --storage-uri 'backup-uri'"
 
-    - name: Backup application settings
-      run: |
-        echo "⚙️ Application settings backup would run here"
-        echo "az webapp config appsettings list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} > frontend-settings-backup.json"
-        echo "az webapp config appsettings list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} > api-settings-backup.json"
+#     - name: Backup application settings
+#       run: |
+#         echo "⚙️ Application settings backup would run here"
+#         echo "az webapp config appsettings list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} > frontend-settings-backup.json"
+#         echo "az webapp config appsettings list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} > api-settings-backup.json"
 
-  deploy-infrastructure-production:
-    name: Deploy Production Infrastructure
-    runs-on: ubuntu-latest
-    needs: backup-production
-    environment: production
+#   deploy-infrastructure-production:
+#     name: Deploy Production Infrastructure
+#     runs-on: ubuntu-latest
+#     needs: backup-production
+#     environment: production
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.0
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.6.0
 
-    - name: Azure Login (Placeholder)
-      run: |
-        echo "🔐 Azure login would happen here"
-        echo "Using production service principal credentials"
+#     - name: Azure Login (Placeholder)
+#       run: |
+#         echo "🔐 Azure login would happen here"
+#         echo "Using production service principal credentials"
 
-    - name: Terraform Init
-      run: |
-        echo "🏗️ Terraform init for production"
-        echo "terraform init"
-      working-directory: ./infrastructure
+#     - name: Terraform Init
+#       run: |
+#         echo "🏗️ Terraform init for production"
+#         echo "terraform init"
+#       working-directory: ./infrastructure
 
-    - name: Terraform Plan
-      run: |
-        echo "📋 Terraform plan for production"
-        echo "terraform plan -var-file='environments/production/terraform.tfvars'"
-      working-directory: ./infrastructure
+#     - name: Terraform Plan
+#       run: |
+#         echo "📋 Terraform plan for production"
+#         echo "terraform plan -var-file='environments/production/terraform.tfvars'"
+#       working-directory: ./infrastructure
 
-    - name: Manual approval checkpoint
-      run: |
-        echo "⏸️ Manual approval required for infrastructure changes"
-        echo "Review the Terraform plan before proceeding"
+#     - name: Manual approval checkpoint
+#       run: |
+#         echo "⏸️ Manual approval required for infrastructure changes"
+#         echo "Review the Terraform plan before proceeding"
 
-    - name: Terraform Apply
-      run: |
-        echo "🚀 Terraform apply for production"
-        echo "terraform apply -var-file='environments/production/terraform.tfvars' -auto-approve"
-      working-directory: ./infrastructure
+#     - name: Terraform Apply
+#       run: |
+#         echo "🚀 Terraform apply for production"
+#         echo "terraform apply -var-file='environments/production/terraform.tfvars' -auto-approve"
+#       working-directory: ./infrastructure
 
-  build-production-artifacts:
-    name: Build Production Artifacts
-    runs-on: ubuntu-latest
-    needs: deploy-infrastructure-production
+#   build-production-artifacts:
+#     name: Build Production Artifacts
+#     runs-on: ubuntu-latest
+#     needs: deploy-infrastructure-production
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies
-      run: dotnet restore ${{ env.SOLUTION_PATH }}
+#     - name: Restore dependencies
+#       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-    - name: Build solution (Release)
-      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+#     - name: Build solution (Release)
+#       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    - name: Run tests before publish
-      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build
+#     - name: Run tests before publish
+#       run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build
 
-    - name: Publish Frontend (Production)
-      run: dotnet publish src/PortfolioCMS.Frontend/PortfolioCMS.Frontend.csproj --configuration Release --output ./publish/frontend --no-build
+#     - name: Publish Frontend (Production)
+#       run: dotnet publish src/PortfolioCMS.Frontend/PortfolioCMS.Frontend.csproj --configuration Release --output ./publish/frontend --no-build
 
-    - name: Publish API (Production)
-      run: dotnet publish src/PortfolioCMS.API/PortfolioCMS.API.csproj --configuration Release --output ./publish/api --no-build
+#     - name: Publish API (Production)
+#       run: dotnet publish src/PortfolioCMS.API/PortfolioCMS.API.csproj --configuration Release --output ./publish/api --no-build
 
-    - name: Upload Frontend Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-production
-        path: ./publish/frontend
-        retention-days: 90
+#     - name: Upload Frontend Artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: frontend-production
+#         path: ./publish/frontend
+#         retention-days: 90
 
-    - name: Upload API Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: api-production
-        path: ./publish/api
-        retention-days: 90
+#     - name: Upload API Artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: api-production
+#         path: ./publish/api
+#         retention-days: 90
 
-  blue-green-deployment:
-    name: Blue-Green Deployment
-    runs-on: ubuntu-latest
-    needs: build-production-artifacts
-    environment: production
+#   blue-green-deployment:
+#     name: Blue-Green Deployment
+#     runs-on: ubuntu-latest
+#     needs: build-production-artifacts
+#     environment: production
     
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: '*-production'
-        path: ./artifacts
+#     steps:
+#     - name: Download artifacts
+#       uses: actions/download-artifact@v4
+#       with:
+#         pattern: '*-production'
+#         path: ./artifacts
 
-    - name: Azure Login (Placeholder)
-      run: |
-        echo "🔐 Azure login for production deployment"
+#     - name: Azure Login (Placeholder)
+#       run: |
+#         echo "🔐 Azure login for production deployment"
 
-    - name: Deploy to staging slot (Blue)
-      run: |
-        echo "🔵 Deploying to staging slot (Blue environment)"
-        echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot staging --src frontend.zip"
-        echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot staging --src api.zip"
+#     - name: Deploy to staging slot (Blue)
+#       run: |
+#         echo "🔵 Deploying to staging slot (Blue environment)"
+#         echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot staging --src frontend.zip"
+#         echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot staging --src api.zip"
 
-    - name: Warm up staging slot
-      run: |
-        echo "🔥 Warming up staging slot"
-        echo "curl -f https://${{ env.FRONTEND_APP_NAME }}-staging.azurewebsites.net/health"
-        echo "curl -f https://${{ env.API_APP_NAME }}-staging.azurewebsites.net/api/v1/health"
+#     - name: Warm up staging slot
+#       run: |
+#         echo "🔥 Warming up staging slot"
+#         echo "curl -f https://${{ env.FRONTEND_APP_NAME }}-staging.azurewebsites.net/health"
+#         echo "curl -f https://${{ env.API_APP_NAME }}-staging.azurewebsites.net/api/v1/health"
 
-    - name: Run smoke tests on staging slot
-      run: |
-        echo "🧪 Running smoke tests on staging slot"
-        echo "Critical functionality tests would run here"
+#     - name: Run smoke tests on staging slot
+#       run: |
+#         echo "🧪 Running smoke tests on staging slot"
+#         echo "Critical functionality tests would run here"
 
-    - name: Swap slots (Blue -> Green)
-      run: |
-        echo "🔄 Swapping staging slot to production"
-        echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot staging --target-slot production"
-        echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot staging --target-slot production"
+#     - name: Swap slots (Blue -> Green)
+#       run: |
+#         echo "🔄 Swapping staging slot to production"
+#         echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot staging --target-slot production"
+#         echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot staging --target-slot production"
 
-  run-production-migrations:
-    name: Run Production Database Migrations
-    runs-on: ubuntu-latest
-    needs: blue-green-deployment
-    environment: production
+#   run-production-migrations:
+#     name: Run Production Database Migrations
+#     runs-on: ubuntu-latest
+#     needs: blue-green-deployment
+#     environment: production
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install EF Core tools
-      run: dotnet tool install --global dotnet-ef
+#     - name: Install EF Core tools
+#       run: dotnet tool install --global dotnet-ef
 
-    - name: Run production database migrations
-      run: |
-        echo "🗄️ Running production database migrations"
-        echo "dotnet ef database update --project src/PortfolioCMS.DataAccess --startup-project src/PortfolioCMS.API --connection 'production-connection-string'"
+#     - name: Run production database migrations
+#       run: |
+#         echo "🗄️ Running production database migrations"
+#         echo "dotnet ef database update --project src/PortfolioCMS.DataAccess --startup-project src/PortfolioCMS.API --connection 'production-connection-string'"
 
-  post-production-validation:
-    name: Post-production Validation
-    runs-on: ubuntu-latest
-    needs: run-production-migrations
+#   post-production-validation:
+#     name: Post-production Validation
+#     runs-on: ubuntu-latest
+#     needs: run-production-migrations
     
-    steps:
-    - name: Production health checks
-      run: |
-        echo "🏥 Production health checks"
-        echo "curl -f https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net/health"
-        echo "curl -f https://${{ env.API_APP_NAME }}.azurewebsites.net/api/v1/health"
+#     steps:
+#     - name: Production health checks
+#       run: |
+#         echo "🏥 Production health checks"
+#         echo "curl -f https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net/health"
+#         echo "curl -f https://${{ env.API_APP_NAME }}.azurewebsites.net/api/v1/health"
 
-    - name: Critical path testing
-      run: |
-        echo "🛣️ Critical path testing"
-        echo "Test core user journeys in production"
+#     - name: Critical path testing
+#       run: |
+#         echo "🛣️ Critical path testing"
+#         echo "Test core user journeys in production"
 
-    - name: Performance validation
-      run: |
-        echo "⚡ Performance validation"
-        echo "Validate response times meet SLA requirements"
+#     - name: Performance validation
+#       run: |
+#         echo "⚡ Performance validation"
+#         echo "Validate response times meet SLA requirements"
 
-    - name: Security scan on production
-      run: |
-        echo "🔒 Security scan on production environment"
-        echo "OWASP ZAP scan against production URLs"
+#     - name: Security scan on production
+#       run: |
+#         echo "🔒 Security scan on production environment"
+#         echo "OWASP ZAP scan against production URLs"
 
-  rollback-plan:
-    name: Rollback Plan (if needed)
-    runs-on: ubuntu-latest
-    needs: post-production-validation
-    if: failure()
+#   rollback-plan:
+#     name: Rollback Plan (if needed)
+#     runs-on: ubuntu-latest
+#     needs: post-production-validation
+#     if: failure()
     
-    steps:
-    - name: Execute rollback
-      run: |
-        echo "🔙 Executing rollback plan"
-        echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot production --target-slot staging"
-        echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot production --target-slot staging"
+#     steps:
+#     - name: Execute rollback
+#       run: |
+#         echo "🔙 Executing rollback plan"
+#         echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --slot production --target-slot staging"
+#         echo "az webapp deployment slot swap --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --slot production --target-slot staging"
 
-    - name: Restore database backup
-      run: |
-        echo "💾 Restoring database backup if needed"
-        echo "Database rollback procedures would execute here"
+#     - name: Restore database backup
+#       run: |
+#         echo "💾 Restoring database backup if needed"
+#         echo "Database rollback procedures would execute here"
 
-  notify-production-deployment:
-    name: Notify Production Deployment
-    runs-on: ubuntu-latest
-    needs: [deploy-infrastructure-production, blue-green-deployment, run-production-migrations, post-production-validation]
-    if: always()
+#   notify-production-deployment:
+#     name: Notify Production Deployment
+#     runs-on: ubuntu-latest
+#     needs: [deploy-infrastructure-production, blue-green-deployment, run-production-migrations, post-production-validation]
+#     if: always()
     
-    steps:
-    - name: Notify success
-      if: ${{ needs.deploy-infrastructure-production.result == 'success' && needs.blue-green-deployment.result == 'success' && needs.run-production-migrations.result == 'success' && needs.post-production-validation.result == 'success' }}
-      run: |
-        echo "🎉 Production deployment successful!"
-        echo "Frontend URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
-        echo "API URL: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-        echo "Deployed by: ${{ github.actor }}"
-        echo "Deployment time: $(date)"
+#     steps:
+#     - name: Notify success
+#       if: ${{ needs.deploy-infrastructure-production.result == 'success' && needs.blue-green-deployment.result == 'success' && needs.run-production-migrations.result == 'success' && needs.post-production-validation.result == 'success' }}
+#       run: |
+#         echo "🎉 Production deployment successful!"
+#         echo "Frontend URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
+#         echo "API URL: https://${{ env.API_APP_NAME }}.azurewebsites.net"
+#         echo "Deployed by: ${{ github.actor }}"
+#         echo "Deployment time: $(date)"
 
-    - name: Notify failure
-      if: ${{ needs.deploy-infrastructure-production.result == 'failure' || needs.blue-green-deployment.result == 'failure' || needs.run-production-migrations.result == 'failure' || needs.post-production-validation.result == 'failure' }}
-      run: |
-        echo "🚨 Production deployment failed!"
-        echo "Infrastructure: ${{ needs.deploy-infrastructure-production.result }}"
-        echo "Blue-Green Deployment: ${{ needs.blue-green-deployment.result }}"
-        echo "Database Migrations: ${{ needs.run-production-migrations.result }}"
-        echo "Post-deployment Validation: ${{ needs.post-production-validation.result }}"
-        echo "Check rollback procedures and incident response plan"
+#     - name: Notify failure
+#       if: ${{ needs.deploy-infrastructure-production.result == 'failure' || needs.blue-green-deployment.result == 'failure' || needs.run-production-migrations.result == 'failure' || needs.post-production-validation.result == 'failure' }}
+#       run: |
+#         echo "🚨 Production deployment failed!"
+#         echo "Infrastructure: ${{ needs.deploy-infrastructure-production.result }}"
+#         echo "Blue-Green Deployment: ${{ needs.blue-green-deployment.result }}"
+#         echo "Database Migrations: ${{ needs.run-production-migrations.result }}"
+#         echo "Post-deployment Validation: ${{ needs.post-production-validation.result }}"
+#         echo "Check rollback procedures and incident response plan"

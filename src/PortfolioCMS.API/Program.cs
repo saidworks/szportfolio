@@ -16,6 +16,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Aspire service defaults (OpenTelemetry, health checks, service discovery)
+builder.AddServiceDefaults();
+
 // Add Application Insights telemetry (only if connection string is provided)
 var applicationInsightsConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
 if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
@@ -33,24 +36,12 @@ if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     );
 }
 
-// Add database context
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// Add database context with Aspire SQL Server integration
+builder.AddSqlServerDbContext<ApplicationDbContext>("portfoliodb", settings =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString, sqlOptions =>
-    {
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
-        sqlOptions.CommandTimeout(30);
-    });
-    
-    if (builder.Environment.IsDevelopment())
-    {
-        options.EnableSensitiveDataLogging();
-        options.EnableDetailedErrors();
-    }
+    settings.DisableRetry = false;
+    settings.DisableHealthChecks = false;
+    settings.DisableTracing = false;
 });
 
 // Add Identity services
@@ -291,6 +282,9 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 });
 
 app.MapControllers();
+
+// Map Aspire default endpoints (health checks, telemetry)
+app.MapDefaultEndpoints();
 
 // Seed roles and default admin user
 using (var scope = app.Services.CreateScope())

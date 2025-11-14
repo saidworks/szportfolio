@@ -2,14 +2,22 @@
 
 ## Introduction
 
-The Personal Portfolio CMS is a production-ready, cloud-native application built with a three-project architecture: Frontend (Blazor), Data Access Layer, and API Backend. The system enables portfolio owners to manage and showcase their professional profile, projects, and technical articles through a secure, scalable, and observable platform hosted on Azure with comprehensive CI/CD pipeline and infrastructure as code.
+The Personal Portfolio CMS is a production-ready, cloud-native application built with .NET 10 and C# 14, featuring a modern architecture orchestrated by .NET Aspire. The system consists of Frontend (Blazor Server), Data Access Layer, and API Backend projects. The system enables portfolio owners to manage and showcase their professional profile, projects, and technical articles through a secure, scalable, and observable platform hosted on Azure Container Apps with comprehensive CI/CD pipeline and infrastructure as code.
+
+**Technology Requirements:**
+- .NET 10 (latest preview/stable)
+- C# 14 language features
+- .NET Aspire for orchestration and observability
+- Azure Container Apps for hosting
 
 ## Glossary
 
-- **Portfolio_System**: The complete Personal Portfolio CMS application consisting of three independent projects
+- **Portfolio_System**: The complete Personal Portfolio CMS application consisting of projects orchestrated by .NET Aspire
+- **Aspire_AppHost**: .NET Aspire orchestration project managing service discovery and deployment
 - **Frontend_Project**: Blazor Server application handling user interface and presentation logic
 - **API_Project**: ASP.NET Core Web API backend providing RESTful services
 - **DataAccess_Project**: Entity Framework Core data access layer with repository pattern
+- **ServiceDefaults_Project**: Shared .NET Aspire configurations for telemetry and health checks
 - **Admin_User**: The portfolio owner with full content management privileges
 - **Public_User**: Anonymous visitors who can view content and submit comments
 - **Article**: A blog post or technical article with rich text content
@@ -96,23 +104,26 @@ The Personal Portfolio CMS is a production-ready, cloud-native application built
 
 #### Acceptance Criteria
 
-1. THE DataAccess_Project SHALL use Azure SQL Database for data persistence
+1. THE DataAccess_Project SHALL use Azure SQL Database Free tier for data persistence
 2. THE DataAccess_Project SHALL implement Entity Framework Core with database migrations
 3. THE DataAccess_Project SHALL provide seed data for initial system setup
 4. THE DataAccess_Project SHALL maintain data integrity through proper relationships and constraints
 5. THE Portfolio_System SHALL implement automated backup and recovery procedures through Azure services
+6. THE Portfolio_System SHALL store database credentials in Azure Key Vault for secure access
 
 ### Requirement 8
 
-**User Story:** As a development team, I want a clean three-project architecture, so that the system is maintainable and scalable.
+**User Story:** As a development team, I want a clean architecture with .NET Aspire orchestration, so that the system is maintainable, scalable, and easy to develop locally.
 
 #### Acceptance Criteria
 
 1. THE Frontend_Project SHALL contain only Blazor Server components and presentation logic
 2. THE API_Project SHALL contain only Web API controllers and business logic services
 3. THE DataAccess_Project SHALL contain only Entity Framework models, repositories, and data access logic
-4. THE Portfolio_System SHALL enforce clear separation of concerns between projects
-5. THE Portfolio_System SHALL use dependency injection to manage cross-project dependencies
+4. THE Portfolio_System SHALL use .NET Aspire for service orchestration, discovery, and telemetry
+5. THE Portfolio_System SHALL enforce clear separation of concerns between projects
+6. THE Portfolio_System SHALL use dependency injection to manage cross-project dependencies
+7. THE Portfolio_System SHALL provide Aspire dashboard for local development monitoring
 
 ### Requirement 9
 
@@ -157,7 +168,8 @@ The Personal Portfolio CMS is a production-ready, cloud-native application built
 #### Acceptance Criteria
 
 1. THE Portfolio_System SHALL be hosted on Azure App Service with auto-scaling capabilities
-2. THE Portfolio_System SHALL use Azure SQL Database with automated backups and geo-replication
+2. THE Portfolio_System SHALL use Azure SQL Database Free tier with automated backups
 3. THE Portfolio_System SHALL implement Azure CDN for static asset delivery
-4. THE Portfolio_System SHALL use Azure Key Vault for secrets management
+4. THE Portfolio_System SHALL use Azure Key Vault for secrets management including database passwords and connection strings
 5. THE Portfolio_System SHALL implement Azure Application Gateway for load balancing and SSL termination
+6. THE Portfolio_System SHALL retrieve all sensitive credentials from Azure Key Vault at runtime using managed identity
