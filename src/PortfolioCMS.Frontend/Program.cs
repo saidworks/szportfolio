@@ -2,6 +2,23 @@ using PortfolioCMS.Frontend.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Aspire service defaults (OpenTelemetry, health checks, service discovery)
+builder.AddServiceDefaults();
+
+// Configure HttpClient with service discovery for API
+builder.Services.AddHttpClient("api", client =>
+{
+    // Aspire resolves "http://api" to the actual API service endpoint
+    client.BaseAddress = new Uri("http://api");
+});
+
+// Configure HttpClient defaults with resilience and service discovery
+builder.Services.ConfigureHttpClientDefaults(http =>
+{
+    http.AddStandardResilienceHandler();
+    http.AddServiceDiscovery();
+});
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -24,5 +41,8 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Map Aspire default endpoints (health checks, telemetry)
+app.MapDefaultEndpoints();
 
 app.Run();

@@ -2,15 +2,27 @@
 
 ## Overview
 
-The Personal Portfolio CMS is architected as a production-ready, cloud-native application with a three-project architecture deployed on Azure. The system consists of independent, deployable projects: Frontend (Blazor Server), API Backend (ASP.NET Core Web API), and Data Access Layer (Entity Framework Core). The architecture emphasizes clean separation of concerns, comprehensive observability, security-first design, and infrastructure as code for reliable, scalable deployment.
+The Personal Portfolio CMS is architected as a production-ready, cloud-native application orchestrated by .NET Aspire and deployed on Azure Container Apps. The system consists of independent, deployable projects: Frontend (Blazor Server), API Backend (ASP.NET Core Web API), and Data Access Layer (Entity Framework Core), all managed by an Aspire AppHost for service discovery, telemetry, and deployment. The architecture emphasizes clean separation of concerns, comprehensive observability through Aspire's built-in OpenTelemetry, security-first design, and infrastructure as code for reliable, scalable deployment.
 
 ## Architecture
 
-### Three-Project Architecture
+### .NET Aspire Orchestrated Architecture
 
 ```mermaid
 graph TB
+    subgraph "Local Development"
+        AA[Aspire AppHost]
+        AB[Aspire Dashboard]
+        AA --> AB
+    end
+    
     subgraph "Azure Cloud Infrastructure"
+        subgraph "Aspire Orchestration"
+            AC[Service Discovery]
+            AD[OpenTelemetry]
+            AE[Health Checks]
+        end
+        
         subgraph "Frontend Project"
             A[Blazor Server App]
             B[Public Pages]
@@ -34,7 +46,7 @@ graph TB
         end
         
         subgraph "Azure Services"
-            N[Azure App Service]
+            N[Azure Container Apps]
             O[Azure SQL Database]
             P[Azure Key Vault]
             Q[Azure CDN]
@@ -55,7 +67,13 @@ graph TB
         Y[Infrastructure as Code]
     end
     
-    A --> E
+    AA --> A
+    AA --> E
+    AA --> AC
+    
+    A -->|Service Discovery| AC
+    E -->|Service Discovery| AC
+    A -->|HTTP via Aspire| E
     B --> E
     C --> E
     E --> J
@@ -69,8 +87,9 @@ graph TB
     Q --> A
     R --> N
     
-    A --> T
-    E --> T
+    A --> AD
+    E --> AD
+    AD --> T
     T --> S
     T --> U
     
@@ -83,27 +102,42 @@ graph TB
 
 ### Technology Stack
 
+#### Platform Requirements
+- **.NET Version**: .NET 10 (latest preview)
+- **C# Version**: C# 14
+- **.NET Aspire**: Latest stable version compatible with .NET 10
+
 #### Frontend Project
-- **Framework**: Blazor Server with Razor components
+- **Framework**: Blazor Server with Razor components (.NET 10)
+- **Language**: C# 14
 - **UI Components**: Bootstrap 5, custom CSS
 - **Rich Text**: Blazored.TextEditor or TinyMCE
 - **Authentication**: ASP.NET Core Identity integration
 
 #### API Project
-- **Framework**: ASP.NET Core 8.0 Web API
+- **Framework**: ASP.NET Core 10.0 Web API
+- **Language**: C# 14
 - **Authentication**: JWT tokens with ASP.NET Core Identity
 - **Documentation**: Swagger/OpenAPI 3.0 with Swashbuckle
 - **Validation**: FluentValidation
 - **Caching**: In-memory caching with IMemoryCache
 
 #### DataAccess Project
-- **ORM**: Entity Framework Core 8.0
+- **ORM**: Entity Framework Core 10.0
+- **Language**: C# 14
 - **Database**: Azure SQL Database Free tier (32 MB storage)
 - **Patterns**: Repository and Unit of Work patterns
 - **Migrations**: EF Core Code-First migrations
 
+#### .NET Aspire Orchestration
+- **AppHost**: .NET Aspire orchestration project for service management
+- **Service Discovery**: Built-in service discovery for Frontend-to-API communication
+- **Telemetry**: OpenTelemetry integration for distributed tracing
+- **Dashboard**: Aspire dashboard for local development and monitoring
+- **Deployment**: Aspire manifest generation for Azure Container Apps
+
 #### Azure Infrastructure
-- **Hosting**: Azure App Service (Linux containers)
+- **Hosting**: Azure Container Apps (managed by Aspire)
 - **Database**: Azure SQL Database Free tier (32 MB storage limit)
 - **CDN**: Azure CDN for static assets
 - **Security**: Azure Key Vault for secrets management (database passwords, connection strings, API keys)
@@ -124,31 +158,185 @@ graph TB
 - **Infrastructure**: OpenTofu/Terraform
 - **Container Registry**: Azure Container Registry
 
+## .NET Aspire Integration
+
+### Aspire AppHost Configuration
+
+```csharp
+// PortfolioCMS.AppHost/Program.cs
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Add Azure SQL Database resource
+var sqlPassword = builder.AddParameter("sql-password", secret: true);
+var sqlDatabase = builder.AddSqlServer("sql", sqlPassword)
+    .WithDataVolume()
+    .AddDatabase("portfoliodb");
+
+// Add Azure Key Vault resource
+var keyVault = builder.AddAzureKeyVault("keyvault");
+
+// Add API project with service discovery
+var apiService = builder.AddProject<Projects.PortfolioCMS_API>("api")
+    .WithReference(sqlDatabase)
+    .WithReference(keyVault)
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName);
+
+// Add Frontend project with service discovery to API
+var frontend = builder.AddProject<Projects.PortfolioCMS_Frontend>("frontend")
+    .WithReference(apiService)  // Enables service discovery
+    .WithExternalHttpEndpoints();
+
+builder.Build().Run();
+```
+
+### Service Defaults Configuration
+
+```csharp
+// PortfolioCMS.ServiceDefaults/Extensions.cs
+public static class Extensions
+{
+    public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
+    {
+        // Add OpenTelemetry for distributed tracing
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(metrics =>
+            {
+                metrics.AddAspNetCoreInstrumentation()
+                       .AddHttpClientInstrumentation()
+                       .AddRuntimeInstrumentation();
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddAspNetCoreInstrumentation()
+                       .AddHttpClientInstrumentation()
+                       .AddEntityFrameworkCoreInstrumentation();
+            });
+
+        // Add health checks
+        builder.Services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+        // Add service discovery
+        builder.Services.AddServiceDiscovery();
+
+        // Configure HttpClient defaults with resilience
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            http.AddStandardResilienceHandler();
+            http.AddServiceDiscovery();
+        });
+
+        return builder;
+    }
+}
+```
+
+### Frontend Service Discovery Integration
+
+```csharp
+// PortfolioCMS.Frontend/Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Aspire service defaults
+builder.AddServiceDefaults();
+
+// Configure HttpClient with service discovery for API
+builder.Services.AddHttpClient<IApiService, ApiService>(client =>
+{
+    // Aspire resolves "api" to the actual API service endpoint
+    client.BaseAddress = new Uri("http://api");
+})
+.AddStandardResilienceHandler();
+
+var app = builder.Build();
+
+// Map Aspire health checks
+app.MapDefaultEndpoints();
+
+app.Run();
+```
+
+### API Service Discovery Integration
+
+```csharp
+// PortfolioCMS.API/Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Aspire service defaults
+builder.AddServiceDefaults();
+
+// Add SQL Server with connection string from Aspire
+builder.AddSqlServerDbContext<ApplicationDbContext>("portfoliodb");
+
+// Add Azure Key Vault from Aspire
+builder.Configuration.AddAzureKeyVault(
+    new Uri(builder.Configuration["KeyVault:VaultUri"]!),
+    new DefaultAzureCredential());
+
+var app = builder.Build();
+
+// Map Aspire health checks and telemetry
+app.MapDefaultEndpoints();
+
+app.Run();
+```
+
+### Aspire Dashboard Benefits
+
+- **Real-time Monitoring**: View logs, traces, and metrics in real-time during development
+- **Service Discovery**: Visualize service-to-service communication
+- **Distributed Tracing**: Track requests across Frontend → API → Database
+- **Resource Management**: Monitor SQL Database, Key Vault, and other resources
+- **Performance Insights**: Identify bottlenecks and optimize performance
+
+### Deployment with Aspire
+
+```bash
+# Generate deployment manifest for Azure Container Apps
+azd init
+
+# Deploy to Azure using Aspire
+azd up
+
+# Aspire automatically:
+# - Creates Azure Container Apps for Frontend and API
+# - Configures service discovery between containers
+# - Sets up Application Insights for telemetry
+# - Configures managed identity for Key Vault access
+# - Deploys with proper networking and scaling
+```
+
 ## Components and Interfaces
 
-### Project Structure
+### Project Structure with .NET Aspire
 
 ```
 PortfolioCMS.sln
 ├── src/
+│   ├── PortfolioCMS.AppHost/           # .NET Aspire Orchestration
+│   │   ├── Program.cs                  # Aspire service configuration
+│   │   └── appsettings.json
+│   ├── PortfolioCMS.ServiceDefaults/   # Shared Aspire Configurations
+│   │   ├── Extensions.cs               # Telemetry, health checks
+│   │   └── appsettings.json
 │   ├── PortfolioCMS.Frontend/          # Blazor Server Project
 │   │   ├── Components/
 │   │   ├── Pages/
 │   │   ├── Services/
-│   │   └── Program.cs
+│   │   └── Program.cs                  # Uses ServiceDefaults
 │   ├── PortfolioCMS.API/               # Web API Project
 │   │   ├── Controllers/
 │   │   ├── Services/
 │   │   ├── DTOs/
 │   │   ├── Middleware/
-│   │   └── Program.cs
+│   │   └── Program.cs                  # Uses ServiceDefaults
 │   └── PortfolioCMS.DataAccess/        # Data Access Project
 │       ├── Entities/
 │       ├── Repositories/
 │       ├── Context/
 │       └── Migrations/
 ├── infrastructure/                      # OpenTofu/Terraform
-│   ├── main.tf
+│   ├── main.tf                         # Azure Container Apps
 │   ├── variables.tf
 │   └── outputs.tf
 ├── .github/workflows/                   # CI/CD Pipeline
@@ -156,9 +344,9 @@ PortfolioCMS.sln
 │   ├── deploy-staging.yml
 │   └── deploy-production.yml
 └── tests/
-    ├── PortfolioCMS.Frontend.Tests/
-    ├── PortfolioCMS.API.Tests/
-    └── PortfolioCMS.DataAccess.Tests/
+    ├── PortfolioCMS.UnitTests/
+    ├── PortfolioCMS.IntegrationTests/
+    └── PortfolioCMS.AppHost.Tests/     # Aspire orchestration tests
 ```
 
 ### DataAccess Project - Core Entities
@@ -767,24 +955,74 @@ public class ObservabilityService : IObservabilityService
 
 ## Infrastructure as Code Design
 
-### OpenTofu/Terraform Structure
+### OpenTofu/Terraform Structure for Azure Container Apps
+
 ```hcl
 # infrastructure/main.tf
-module "app_service" {
-  source = "./modules/app-service"
+module "container_apps_environment" {
+  source = "./modules/container-apps-environment"
   
   resource_group_name = var.resource_group_name
-  app_service_plan_id = module.app_service_plan.id
+  location            = var.location
+  
+  # Link to Log Analytics for Aspire telemetry
+  log_analytics_workspace_id = module.log_analytics.id
+}
+
+module "container_app_api" {
+  source = "./modules/container-app"
+  
+  resource_group_name         = var.resource_group_name
+  container_apps_environment_id = module.container_apps_environment.id
+  name                        = "portfoliocms-api"
   
   # Enable system-assigned managed identity
   identity {
     type = "SystemAssigned"
   }
   
-  app_settings = {
-    "ApplicationInsights__ConnectionString" = module.application_insights.connection_string
-    "KeyVault__VaultUri" = module.key_vault.vault_uri
+  # Aspire-generated configuration
+  ingress {
+    external_enabled = false  # Internal only, accessed via service discovery
+    target_port      = 8080
   }
+  
+  env = [
+    {
+      name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+      value = module.application_insights.connection_string
+    },
+    {
+      name  = "KeyVault__VaultUri"
+      value = module.key_vault.vault_uri
+    }
+  ]
+}
+
+module "container_app_frontend" {
+  source = "./modules/container-app"
+  
+  resource_group_name         = var.resource_group_name
+  container_apps_environment_id = module.container_apps_environment.id
+  name                        = "portfoliocms-frontend"
+  
+  # Enable system-assigned managed identity
+  identity {
+    type = "SystemAssigned"
+  }
+  
+  # Aspire service discovery configuration
+  ingress {
+    external_enabled = true  # Public-facing
+    target_port      = 8080
+  }
+  
+  env = [
+    {
+      name  = "services__api__http__0"
+      value = "http://portfoliocms-api"  # Aspire service discovery
+    }
+  ]
 }
 
 module "sql_database" {
@@ -807,10 +1045,14 @@ module "key_vault" {
   resource_group_name = var.resource_group_name
   key_vault_name      = var.key_vault_name
   
-  # Grant App Service managed identity access to Key Vault
+  # Grant Container Apps managed identities access to Key Vault
   access_policies = [
     {
-      object_id = module.app_service.identity_principal_id
+      object_id = module.container_app_api.identity_principal_id
+      secret_permissions = ["Get", "List"]
+    },
+    {
+      object_id = module.container_app_frontend.identity_principal_id
       secret_permissions = ["Get", "List"]
     }
   ]

@@ -22,41 +22,24 @@ public static class DatabaseConfiguration
                 "Ensure it's configured in appsettings.json or Azure Key Vault.");
         }
 
-        // Configure Entity Framework with database provider detection
+        // Configure Entity Framework with SQL Server/Azure SQL Database
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            if (IsMySqlConnectionString(connectionString))
+            // Configure for SQL Server/Azure SQL Database
+            options.UseSqlServer(connectionString, sqlOptions =>
             {
-                // Configure for MySQL (Development)
-                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
-                {
-                    mysqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                    
-                    mysqlOptions.CommandTimeout(30);
-                    mysqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-                });
-            }
-            else
-            {
-                // Configure for SQL Server/Azure SQL Database (Staging/Production)
-                options.UseSqlServer(connectionString, sqlOptions =>
-                {
-                    // Enable connection resiliency for Azure SQL Database
-                    sqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                    
-                    // Configure command timeout for long-running operations
-                    sqlOptions.CommandTimeout(30);
-                    
-                    // Enable multiple active result sets
-                    sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-                });
-            }
+                // Enable connection resiliency for Azure SQL Database
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+                
+                // Configure command timeout for long-running operations
+                sqlOptions.CommandTimeout(30);
+                
+                // Enable multiple active result sets
+                sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+            });
 
             // Configure logging and diagnostics
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
@@ -113,9 +96,4 @@ public static class DatabaseConfiguration
         }
     }
 
-    private static bool IsMySqlConnectionString(string connectionString)
-    {
-        return connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase) ||
-               connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase);
-    }
 }

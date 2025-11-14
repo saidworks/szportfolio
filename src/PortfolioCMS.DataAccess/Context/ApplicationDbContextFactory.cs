@@ -28,40 +28,19 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             connectionString = "Server=(localdb)\\mssqllocaldb;Database=PortfolioCMS;Trusted_Connection=true;MultipleActiveResultSets=true";
         }
 
-        // Configure DbContext options based on connection string
+        // Configure DbContext options for SQL Server
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         
-        if (IsMySqlConnectionString(connectionString))
+        // Configure for SQL Server (Azure SQL Database)
+        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
         {
-            // Configure for MySQL (Development)
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
-            {
-                mysqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-                mysqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null);
-            });
-        }
-        else
-        {
-            // Configure for SQL Server (Staging/Production)
-            optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null);
-            });
-        }
+            sqlOptions.MigrationsAssembly("PortfolioCMS.DataAccess");
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
 
         return new ApplicationDbContext(optionsBuilder.Options);
-    }
-
-    private static bool IsMySqlConnectionString(string connectionString)
-    {
-        return connectionString.Contains("Port=3306", StringComparison.OrdinalIgnoreCase) ||
-               connectionString.Contains("mysql", StringComparison.OrdinalIgnoreCase);
     }
 }
