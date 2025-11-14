@@ -1,0 +1,212 @@
+@page "/blog/{Id:int}"
+@layout PublicLayout
+@inject IArticleService ArticleService
+@inject ICommentService CommentService
+@inject NavigationManager Navigation
+
+<PageTitle>@(article?.Title ?? "Article") - Portfolio</PageTitle>
+
+<div class="article-detail-page">
+    <div class="container">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (article != null)
+        {
+            <!-- Article Header -->
+            <article class="mb-5">
+                <header class="mb-4">
+                    <h1 class="display-4">@article.Title</h1>
+                    <div class="text-muted mb-3">
+                        <span>Published on @article.PublishedDate?.ToString("MMMM dd, yyyy")</span>
+                        <span class="mx-2">|</span>
+                        <span>@article.Comments.Count comments</span>
+                    </div>
+                    @if (article.Tags.Any())
+                    {
+                        <div class="mb-3">
+                            @foreach (var tag in article.Tags)
+                            {
+                                <span class="badge bg-primary me-1">@tag.Name</span>
+                            }
+                        </div>
+                    }
+                </header>
+
+                @if (!string.IsNullOrEmpty(article.FeaturedImageUrl))
+                {
+                    <div class="mb-4">
+                        <img src="@article.FeaturedImageUrl" class="img-fluid rounded" alt="@article.Title" />
+                    </div>
+                }
+
+                <!-- Article Content -->
+                <div class="article-content mb-5">
+                    @((MarkupString)article.Content)
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <section class="comments-section mb-5">
+                <h3 class="mb-4">Comments (@article.Comments.Count)</h3>
+
+                <!-- Approved Comments -->
+                @if (article.Comments.Any(c => c.Status == CommentStatus.Approved))
+                {
+                    <div class="comments-list mb-4">
+                        @foreach (var comment in article.Comments.Where(c => c.Status == CommentStatus.Approved).OrderByDescending(c => c.SubmittedDate))
+                        {
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2">
+                                        @comment.AuthorName
+                                        <small class="text-muted">- @comment.SubmittedDate.ToString("MMMM dd, yyyy")</small>
+                                    </h6>
+                                    <p class="card-text">@comment.Content</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No comments yet. Be the first to comment!</p>
+                }
+
+                <!-- Comment Form -->
+                <div class="comment-form">
+                    <h4 class="mb-3">Leave a Comment</h4>
+                    <EditForm Model="@newComment" OnValidSubmit="@SubmitComment">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label for="authorName" class="form-label">Name *</label>
+                            <InputText id="authorName" class="form-control" @bind-Value="newComment.AuthorName" />
+                            <ValidationMessage For="@(() => newComment.AuthorName)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="authorEmail" class="form-label">Email *</label>
+                            <InputText id="authorEmail" type="email" class="form-control" @bind-Value="newComment.AuthorEmail" />
+                            <ValidationMessage For="@(() => newComment.AuthorEmail)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Comment *</label>
+                            <InputTextArea id="content" class="form-control" rows="4" @bind-Value="newComment.Content" />
+                            <ValidationMessage For="@(() => newComment.Content)" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(commentSubmitMessage))
+                        {
+                            <div class="alert @(commentSubmitSuccess ? "alert-success" : "alert-danger")">
+                                @commentSubmitMessage
+                            </div>
+                        }
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmittingComment">
+                            @if (isSubmittingComment)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            Submit Comment
+                        </button>
+                    </EditForm>
+                </div>
+            </section>
+
+            <!-- Back to Blog -->
+            <div class="mb-4">
+                <a href="/blog" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Blog
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                <h4>Article Not Found</h4>
+                <p>The article you're looking for doesn't exist or has been removed.</p>
+                <a href="/blog" class="btn btn-primary">Back to Blog</a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ArticleDetailDto? article;
+    private CreateCommentDto newComment = new();
+    private bool isLoading = true;
+    private bool isSubmittingComment = false;
+    private string commentSubmitMessage = string.Empty;
+    private bool commentSubmitSuccess = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadArticle();
+    }
+
+    private async Task LoadArticle()
+    {
+        isLoading = true;
+        try
+        {
+            article = await ArticleService.GetArticleByIdAsync(Id);
+            if (article != null)
+            {
+                newComment.ArticleId = article.Id;
+            }
+        }
+        catch (Exception)
+        {
+            article = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SubmitComment()
+    {
+        isSubmittingComment = true;
+        commentSubmitMessage = string.Empty;
+
+        try
+        {
+            var result = await CommentService.SubmitCommentAsync(newComment);
+            
+            if (result != null)
+            {
+                commentSubmitSuccess = true;
+                commentSubmitMessage = "Your comment has been submitted and is awaiting moderation. Thank you!";
+                
+                // Reset form
+                newComment = new CreateCommentDto { ArticleId = Id };
+            }
+            else
+            {
+                commentSubmitSuccess = false;
+                commentSubmitMessage = "Failed to submit comment. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            commentSubmitSuccess = false;
+            commentSubmitMessage = "An error occurred while submitting your comment. Please try again.";
+        }
+        finally
+        {
+            isSubmittingComment = false;
+        }
+    }
+}

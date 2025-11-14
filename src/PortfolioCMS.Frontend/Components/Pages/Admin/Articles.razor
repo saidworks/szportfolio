@@ -1,0 +1,259 @@
+@page "/admin/articles"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IArticleService ArticleService
+@inject NavigationManager Navigation
+
+<PageTitle>Manage Articles - Admin</PageTitle>
+
+<div class="admin-articles">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Articles</h1>
+        <a href="/admin/articles/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Article
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search articles..." @bind="searchQuery" @bind:event="oninput" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @onchange="OnStatusFilterChanged">
+                        <option value="">All Status</option>
+                        <option value="@ArticleStatus.Draft">Draft</option>
+                        <option value="@ArticleStatus.Published">Published</option>
+                        <option value="@ArticleStatus.Archived">Archived</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @onchange="OnTagFilterChanged">
+                        <option value="">All Tags</option>
+                        @if (tags != null)
+                        {
+                            @foreach (var tag in tags)
+                            {
+                                <option value="@tag.Slug">@tag.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-secondary w-100" @onclick="LoadArticles">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (pagedArticles != null && pagedArticles.Items.Any())
+    {
+        <!-- Articles Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Published</th>
+                                <th>Comments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var article in pagedArticles.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@article.Title</strong>
+                                        <br />
+                                        <small class="text-muted">@article.Summary</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@GetStatusBadgeClass(article.Status)">
+                                            @article.Status
+                                        </span>
+                                    </td>
+                                    <td>@article.CreatedDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@(article.PublishedDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                    <td>@article.CommentCount</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/blog/@article.Id" target="_blank" class="btn btn-outline-secondary" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/admin/articles/edit/@article.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger" @onclick="() => DeleteArticle(article.Id)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (pagedArticles.TotalPages > 1)
+                {
+                    <nav aria-label="Article pagination" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(pagedArticles.HasPreviousPage ? "" : "disabled")">
+                                <button class="page-link" @onclick="() => LoadPage(pagedArticles.Page - 1)" disabled="@(!pagedArticles.HasPreviousPage)">
+                                    Previous
+                                </button>
+                            </li>
+                            @for (int i = 1; i <= pagedArticles.TotalPages; i++)
+                            {
+                                var pageNumber = i;
+                                <li class="page-item @(pagedArticles.Page == pageNumber ? "active" : "")">
+                                    <button class="page-link" @onclick="() => LoadPage(pageNumber)">
+                                        @pageNumber
+                                    </button>
+                                </li>
+                            }
+                            <li class="page-item @(pagedArticles.HasNextPage ? "" : "disabled")">
+                                <button class="page-link" @onclick="() => LoadPage(pagedArticles.Page + 1)" disabled="@(!pagedArticles.HasNextPage)">
+                                    Next
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <p class="mb-0">No articles found.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private PagedResult<ArticleDto>? pagedArticles;
+    private List<TagDto>? tags;
+    private string searchQuery = string.Empty;
+    private string selectedTag = string.Empty;
+    private ArticleStatus? selectedStatus = null;
+    private int currentPage = 1;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTags();
+        await LoadArticles();
+    }
+
+    private async Task LoadTags()
+    {
+        try
+        {
+            tags = await ArticleService.GetTagsAsync();
+        }
+        catch (Exception)
+        {
+            tags = new List<TagDto>();
+        }
+    }
+
+    private async Task LoadArticles()
+    {
+        isLoading = true;
+        try
+        {
+            var parameters = new ArticleQueryParameters
+            {
+                Page = currentPage,
+                PageSize = 10,
+                Search = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery,
+                Tag = string.IsNullOrWhiteSpace(selectedTag) ? null : selectedTag,
+                Status = selectedStatus,
+                SortBy = "CreatedDate",
+                SortOrder = "desc"
+            };
+
+            pagedArticles = await ArticleService.GetArticlesAsync(parameters);
+        }
+        catch (Exception)
+        {
+            pagedArticles = new PagedResult<ArticleDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadPage(int page)
+    {
+        currentPage = page;
+        await LoadArticles();
+    }
+
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<ArticleStatus>(e.Value?.ToString(), out var status))
+        {
+            selectedStatus = status;
+        }
+        else
+        {
+            selectedStatus = null;
+        }
+        currentPage = 1;
+        await LoadArticles();
+    }
+
+    private async Task OnTagFilterChanged(ChangeEventArgs e)
+    {
+        selectedTag = e.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        await LoadArticles();
+    }
+
+    private async Task DeleteArticle(int id)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this article?"))
+        {
+            var success = await ArticleService.DeleteArticleAsync(id);
+            if (success)
+            {
+                await LoadArticles();
+            }
+        }
+    }
+
+    private string GetStatusBadgeClass(ArticleStatus status)
+    {
+        return status switch
+        {
+            ArticleStatus.Published => "success",
+            ArticleStatus.Draft => "secondary",
+            ArticleStatus.Archived => "warning",
+            _ => "secondary"
+        };
+    }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+}

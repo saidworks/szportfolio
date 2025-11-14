@@ -1,5 +1,25 @@
 # Implementation Plan
 
+## Branch Strategy
+
+When starting work on a major task (top-level numbered items like 1, 2, 3, etc.), create a feature branch following this naming convention:
+
+- **Branch naming**: `feature/{task-number}-{short-description}`
+- **Examples**:
+  - Task 4 → `feature/4-frontend`
+  - Task 5 → `feature/5-azure-infrastructure`
+  - Task 6 → `feature/6-security`
+
+**Workflow**:
+1. Before starting a major task, create and checkout the feature branch from `main`
+2. Complete all sub-tasks within that feature branch
+3. Once all sub-tasks are complete and tested, create a pull request to merge back to `main`
+4. After PR approval and merge, delete the feature branch
+
+This approach keeps major features isolated and makes code review more manageable.
+
+---
+
 - [x] 1. Set up three-project solution structure and infrastructure foundation
 
 
@@ -144,11 +164,17 @@
     - Add HealthController for monitoring and readiness checks
     - _Requirements: 1.1, 2.1, 2.2, 3.2, 5.1, 6.4, 11.4_
 
-- [ ] 4. Develop Frontend project with Blazor Server
+- [x] 4. Develop Frontend project with Blazor Server
 
 
 
-  - [ ] 4.1 Set up Blazor Server project with Aspire integration
+
+
+
+
+  - [x] 4.1 Set up Blazor Server project with Aspire integration
+
+
     - Create PortfolioCMS.Frontend project with Blazor Server components
     - Add Aspire service defaults for telemetry and health checks
     - Configure service discovery to communicate with API project via Aspire
@@ -156,21 +182,27 @@
     - Configure Aspire dashboard integration for monitoring
     - _Requirements: 1.1, 8.1, 8.4, 11.2_
   
-  - [ ] 4.2 Create public-facing pages and components
+  - [x] 4.2 Create public-facing pages and components
+
+
     - Implement Home/Resume page displaying portfolio sections with responsive design
     - Create Blog listing page with search, pagination, and SEO optimization
     - Build Article detail page with comment display and submission functionality
     - Add Contact page with message form and validation
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.4, 5.1, 5.4_
   
-  - [ ] 4.3 Build admin dashboard with rich functionality
+  - [x] 4.3 Build admin dashboard with rich functionality
+
+
     - Create admin layout with navigation and role-based authentication
     - Implement article management pages (list, create, edit) with rich text editor
     - Build comment moderation interface with bulk operations
     - Add media management page for Azure Blob Storage file uploads
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 4.4_
   
-  - [ ] 4.4 Implement API integration services with Aspire service discovery
+  - [x] 4.4 Implement API integration services with Aspire service discovery
+
+
     - Create ApiService for HTTP communication with API project using Aspire service discovery
     - Configure HttpClient with Aspire-provided service endpoints
     - Add error handling, retry logic, and resilience patterns with Polly

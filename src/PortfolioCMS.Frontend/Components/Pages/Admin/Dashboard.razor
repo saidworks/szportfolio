@@ -1,0 +1,239 @@
+@page "/admin"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IArticleService ArticleService
+@inject IProjectService ProjectService
+@inject ICommentService CommentService
+
+<PageTitle>Admin Dashboard - Portfolio</PageTitle>
+
+<div class="admin-dashboard">
+    <h1 class="mb-4">Dashboard</h1>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Statistics Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Articles</h5>
+                        <p class="display-4">@totalArticles</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Published</h5>
+                        <p class="display-4">@publishedArticles</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Pending Comments</h5>
+                        <p class="display-4">@pendingComments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Projects</h5>
+                        <p class="display-4">@totalProjects</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="/admin/articles/create" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> New Article
+                            </a>
+                            <a href="/admin/projects/create" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> New Project
+                            </a>
+                            <a href="/admin/comments" class="btn btn-warning">
+                                <i class="bi bi-chat-dots"></i> Moderate Comments
+                            </a>
+                            <a href="/admin/media" class="btn btn-info">
+                                <i class="bi bi-upload"></i> Upload Media
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Articles -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Articles</h5>
+                        <a href="/admin/articles" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        @if (recentArticles != null && recentArticles.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Comments</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var article in recentArticles.Take(5))
+                                        {
+                                            <tr>
+                                                <td>@article.Title</td>
+                                                <td>
+                                                    <span class="badge bg-@GetStatusBadgeClass(article.Status)">
+                                                        @article.Status
+                                                    </span>
+                                                </td>
+                                                <td>@article.CreatedDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@article.CommentCount</td>
+                                                <td>
+                                                    <a href="/admin/articles/edit/@article.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No articles yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Comments -->
+        @if (pendingCommentsList != null && pendingCommentsList.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Pending Comments</h5>
+                            <a href="/admin/comments" class="btn btn-sm btn-outline-warning">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                @foreach (var comment in pendingCommentsList.Take(5))
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">@comment.AuthorName</h6>
+                                                <p class="mb-1">@comment.Content</p>
+                                                <small class="text-muted">
+                                                    On: @comment.ArticleTitle | @comment.SubmittedDate.ToString("MMM dd, yyyy")
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <a href="/admin/comments" class="btn btn-sm btn-outline-primary">Review</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private int totalArticles = 0;
+    private int publishedArticles = 0;
+    private int pendingComments = 0;
+    private int totalProjects = 0;
+    private List<ArticleDto>? recentArticles;
+    private List<CommentModerationDto>? pendingCommentsList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        isLoading = true;
+        try
+        {
+            // Load articles
+            var articlesResult = await ArticleService.GetArticlesAsync(new ArticleQueryParameters
+            {
+                Page = 1,
+                PageSize = 10,
+                SortBy = "CreatedDate",
+                SortOrder = "desc"
+            });
+
+            if (articlesResult != null)
+            {
+                recentArticles = articlesResult.Items;
+                totalArticles = articlesResult.TotalCount;
+                publishedArticles = recentArticles.Count(a => a.Status == ArticleStatus.Published);
+            }
+
+            // Load projects
+            var projects = await ProjectService.GetProjectsAsync();
+            totalProjects = projects?.Count ?? 0;
+
+            // Load pending comments
+            pendingCommentsList = await CommentService.GetPendingCommentsAsync();
+            pendingComments = pendingCommentsList?.Count ?? 0;
+        }
+        catch (Exception)
+        {
+            // Log error
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(ArticleStatus status)
+    {
+        return status switch
+        {
+            ArticleStatus.Published => "success",
+            ArticleStatus.Draft => "secondary",
+            ArticleStatus.Archived => "warning",
+            _ => "secondary"
+        };
+    }
+}

@@ -1,0 +1,191 @@
+@page "/blog"
+@layout PublicLayout
+@inject IArticleService ArticleService
+@inject NavigationManager Navigation
+
+<PageTitle>Blog - Portfolio</PageTitle>
+
+<div class="blog-page">
+    <div class="container">
+        <h1 class="mb-4">Blog</h1>
+
+        <!-- Search Bar -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search articles..." @bind="searchQuery" @bind:event="oninput" />
+                    <button class="btn btn-primary" @onclick="SearchArticles">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" @onchange="OnTagFilterChanged">
+                    <option value="">All Tags</option>
+                    @if (tags != null)
+                    {
+                        @foreach (var tag in tags)
+                        {
+                            <option value="@tag.Slug">@tag.Name (@tag.ArticleCount)</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (pagedArticles != null && pagedArticles.Items.Any())
+        {
+            <!-- Articles List -->
+            <div class="row g-4 mb-4">
+                @foreach (var article in pagedArticles.Items)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm article-card">
+                            @if (!string.IsNullOrEmpty(article.FeaturedImageUrl))
+                            {
+                                <img src="@article.FeaturedImageUrl" class="card-img-top" alt="@article.Title" style="height: 200px; object-fit: cover;">
+                            }
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="/blog/@article.Id" class="text-decoration-none text-dark">
+                                        @article.Title
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted small">
+                                    @article.PublishedDate?.ToString("MMMM dd, yyyy") | @article.CommentCount comments
+                                </p>
+                                <p class="card-text">@article.Summary</p>
+                                @if (article.Tags.Any())
+                                {
+                                    <div class="mt-2">
+                                        @foreach (var tag in article.Tags)
+                                        {
+                                            <span class="badge bg-secondary me-1">@tag.Name</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a href="/blog/@article.Id" class="btn btn-sm btn-primary">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (pagedArticles.TotalPages > 1)
+            {
+                <nav aria-label="Article pagination">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(pagedArticles.HasPreviousPage ? "" : "disabled")">
+                            <button class="page-link" @onclick="() => LoadPage(pagedArticles.Page - 1)" disabled="@(!pagedArticles.HasPreviousPage)">
+                                Previous
+                            </button>
+                        </li>
+                        @for (int i = 1; i <= pagedArticles.TotalPages; i++)
+                        {
+                            var pageNumber = i;
+                            <li class="page-item @(pagedArticles.Page == pageNumber ? "active" : "")">
+                                <button class="page-link" @onclick="() => LoadPage(pageNumber)">
+                                    @pageNumber
+                                </button>
+                            </li>
+                        }
+                        <li class="page-item @(pagedArticles.HasNextPage ? "" : "disabled")">
+                            <button class="page-link" @onclick="() => LoadPage(pagedArticles.Page + 1)" disabled="@(!pagedArticles.HasNextPage)">
+                                Next
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <p class="mb-0">No articles found. @(string.IsNullOrEmpty(searchQuery) ? "" : "Try a different search term.")</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private PagedResult<ArticleDto>? pagedArticles;
+    private List<TagDto>? tags;
+    private string searchQuery = string.Empty;
+    private string selectedTag = string.Empty;
+    private int currentPage = 1;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTags();
+        await LoadArticles();
+    }
+
+    private async Task LoadTags()
+    {
+        try
+        {
+            tags = await ArticleService.GetTagsAsync();
+        }
+        catch (Exception)
+        {
+            tags = new List<TagDto>();
+        }
+    }
+
+    private async Task LoadArticles()
+    {
+        isLoading = true;
+        try
+        {
+            var parameters = new ArticleQueryParameters
+            {
+                Page = currentPage,
+                PageSize = 9,
+                Search = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery,
+                Tag = string.IsNullOrWhiteSpace(selectedTag) ? null : selectedTag,
+                Status = ArticleStatus.Published
+            };
+
+            pagedArticles = await ArticleService.GetArticlesAsync(parameters);
+        }
+        catch (Exception)
+        {
+            pagedArticles = new PagedResult<ArticleDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadPage(int page)
+    {
+        currentPage = page;
+        await LoadArticles();
+    }
+
+    private async Task SearchArticles()
+    {
+        currentPage = 1;
+        await LoadArticles();
+    }
+
+    private async Task OnTagFilterChanged(ChangeEventArgs e)
+    {
+        selectedTag = e.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        await LoadArticles();
+    }
+}
