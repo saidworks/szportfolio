@@ -1,0 +1,90 @@
+# ZAP Scanning Rules Configuration
+# Format: <rule_id>	<threshold>	<action>
+# Thresholds: IGNORE, INFO, LOW, MEDIUM, HIGH
+# Actions: IGNORE, WARN, FAIL
+
+# Ignore false positives for development/staging environments
+10021	IGNORE	WARN	# X-Content-Type-Options Header Missing (handled by middleware)
+10020	IGNORE	WARN	# X-Frame-Options Header Not Set (handled by middleware)
+10016	IGNORE	WARN	# Web Browser XSS Protection Not Enabled (handled by middleware)
+
+# High priority security issues
+10049	HIGH	FAIL	# Storable and Cacheable Content
+10050	HIGH	FAIL	# Retrieved from Cache
+10051	HIGH	FAIL	# Relative Path Confusion
+10052	HIGH	FAIL	# X-ChromeLogger-Data Header Information Leak
+10053	HIGH	FAIL	# Apache Range Header DoS
+10054	HIGH	FAIL	# Cookie Without SameSite Attribute
+10055	HIGH	FAIL	# CSP Scanner
+10056	HIGH	FAIL	# X-Debug-Token Information Leak
+10057	HIGH	FAIL	# Username Hash Found
+10061	HIGH	FAIL	# X-AspNet-Version Response Header
+10062	HIGH	FAIL	# PII Disclosure
+10063	HIGH	FAIL	# Permissions Policy Header Not Set
+10096	HIGH	FAIL	# Timestamp Disclosure
+10097	HIGH	FAIL	# Hash Disclosure
+10098	HIGH	FAIL	# Cross-Domain Misconfiguration
+10099	HIGH	FAIL	# Source Code Disclosure
+
+# SQL Injection
+40018	HIGH	FAIL	# SQL Injection
+40019	HIGH	FAIL	# SQL Injection - MySQL
+40020	HIGH	FAIL	# SQL Injection - Hypersonic SQL
+40021	HIGH	FAIL	# SQL Injection - Oracle
+40022	HIGH	FAIL	# SQL Injection - PostgreSQL
+
+# XSS
+40012	HIGH	FAIL	# Cross Site Scripting (Reflected)
+40014	HIGH	FAIL	# Cross Site Scripting (Persistent)
+40016	HIGH	FAIL	# Cross Site Scripting (Persistent) - Prime
+40017	HIGH	FAIL	# Cross Site Scripting (Persistent) - Spider
+
+# Authentication and Session Management
+10010	HIGH	FAIL	# Cookie No HttpOnly Flag
+10011	HIGH	FAIL	# Cookie Without Secure Flag
+10017	MEDIUM	WARN	# Cross-Domain JavaScript Source File Inclusion
+10019	MEDIUM	WARN	# Content-Type Header Missing
+10027	MEDIUM	WARN	# Information Disclosure - Suspicious Comments
+10032	MEDIUM	WARN	# Viewstate Scanner
+10037	MEDIUM	WARN	# Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+10040	MEDIUM	WARN	# Secure Pages Include Mixed Content
+10041	MEDIUM	WARN	# HTTP to HTTPS Insecure Transition in Form Post
+10042	MEDIUM	WARN	# HTTPS to HTTP Insecure Transition in Form Post
+10043	MEDIUM	WARN	# User Controllable JavaScript Event (XSS)
+10044	MEDIUM	WARN	# Big Redirect Detected (Potential Sensitive Information Leak)
+10045	MEDIUM	WARN	# Source Code Disclosure - /WEB-INF folder
+10047	MEDIUM	WARN	# HTTPS Content Available via HTTP
+10048	MEDIUM	WARN	# Remote Code Execution - Shell Shock
+
+# Path Traversal
+6	HIGH	FAIL	# Path Traversal
+
+# Remote File Inclusion
+7	HIGH	FAIL	# Remote File Inclusion
+
+# Server Side Include
+40009	HIGH	FAIL	# Server Side Include
+
+# Remote OS Command Injection
+90020	HIGH	FAIL	# Remote OS Command Injection
+
+# Directory Browsing
+0	MEDIUM	WARN	# Directory Browsing
+
+# External Redirect
+20019	MEDIUM	WARN	# External Redirect
+
+# CRLF Injection
+40003	HIGH	FAIL	# CRLF Injection
+
+# Parameter Tampering
+40008	MEDIUM	WARN	# Parameter Tampering
+
+# Format String Error
+30002	HIGH	FAIL	# Format String Error
+
+# Buffer Overflow
+30001	HIGH	FAIL	# Buffer Overflow
+
+# Integer Overflow
+30003	HIGH	FAIL	# Integer Overflow

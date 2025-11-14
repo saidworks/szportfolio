@@ -72,25 +72,97 @@ jobs:
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    # Placeholder for SonarCloud integration
-    - name: SonarCloud Scan (Placeholder)
-      run: |
-        echo "SonarCloud scan would run here"
-        echo "Configure SONAR_TOKEN secret and uncomment the following steps:"
-        echo "# - name: SonarCloud Scan"
-        echo "#   uses: SonarSource/sonarcloud-github-action@master"
-        echo "#   env:"
-        echo "#     GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}"
-        echo "#     SONAR_TOKEN: \${{ secrets.SONAR_TOKEN }}"
+    # SonarCloud static code analysis
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v4
+      with:
+        path: ~\sonar\cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
 
-    # Placeholder for dependency vulnerability scanning
-    - name: Dependency Vulnerability Scan (Placeholder)
+    - name: Cache SonarCloud scanner
+      id: cache-sonar-scanner
+      uses: actions/cache@v4
+      with:
+        path: .\.sonar\scanner
+        key: ${{ runner.os }}-sonar-scanner
+        restore-keys: ${{ runner.os }}-sonar-scanner
+
+    - name: Install SonarCloud scanner
+      if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
       run: |
-        echo "Dependency vulnerability scan would run here"
-        echo "Consider using:"
-        echo "- Snyk: https://github.com/snyk/actions"
-        echo "- OWASP Dependency Check: https://github.com/dependency-check/Dependency-Check_Action"
-        echo "- GitHub Security Advisories (built-in)"
+        dotnet tool install --global dotnet-sonarscanner
+
+    - name: SonarCloud Scan
+      if: ${{ secrets.SONAR_TOKEN != '' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet sonarscanner begin /k:"PortfolioCMS" /o:"your-org" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+        dotnet build ${{ env.SOLUTION_PATH }} --configuration Release
+        dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      continue-on-error: true
+
+    - name: SonarCloud Scan (Not Configured)
+      if: ${{ secrets.SONAR_TOKEN == '' }}
+      run: |
+        echo "⚠️ SonarCloud scan skipped - SONAR_TOKEN not configured"
+        echo "To enable SonarCloud scanning:"
+        echo "1. Create a SonarCloud account at https://sonarcloud.io"
+        echo "2. Create a new project and get your token"
+        echo "3. Add SONAR_TOKEN to GitHub repository secrets"
+        echo "4. Update the organization key in the workflow"
+
+    # Dependency vulnerability scanning with Snyk
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/dotnet@master
+      if: ${{ secrets.SNYK_TOKEN != '' }}
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --file=${{ env.SOLUTION_PATH }}
+      continue-on-error: true
+
+    - name: Snyk Scan (Not Configured)
+      if: ${{ secrets.SNYK_TOKEN == '' }}
+      run: |
+        echo "⚠️ Snyk scan skipped - SNYK_TOKEN not configured"
+        echo "To enable Snyk scanning:"
+        echo "1. Create a Snyk account at https://snyk.io"
+        echo "2. Get your API token from account settings"
+        echo "3. Add SNYK_TOKEN to GitHub repository secrets"
+
+    # OWASP Dependency Check
+    - name: OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'PortfolioCMS'
+        path: '.'
+        format: 'HTML'
+        args: >
+          --enableRetired
+          --enableExperimental
+          --failOnCVSS 7
+      continue-on-error: true
+
+    - name: Upload OWASP Dependency Check results
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-check-report
+        path: ${{ github.workspace }}/reports
+
+    # Security code scanning with CodeQL
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: csharp
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
 
   infrastructure-validation:
     name: Infrastructure Validation
