@@ -1,239 +1,239 @@
-name: Deploy to Staging
+# name: Deploy to Staging
 
-on:
-  push:
-    branches: [ develop ]
-  workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: 'Force deployment even if CI checks fail'
-        required: false
-        default: false
-        type: boolean
+# on:
+#   push:
+#     branches: [ develop ]
+#   workflow_dispatch:
+#     inputs:
+#       force_deploy:
+#         description: 'Force deployment even if CI checks fail'
+#         required: false
+#         default: false
+#         type: boolean
 
-env:
-  DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './PortfolioCMS.sln'
-  AZURE_RESOURCE_GROUP: 'rg-portfoliocms-staging'
-  FRONTEND_APP_NAME: 'app-portfoliocms-frontend-staging'
-  API_APP_NAME: 'app-portfoliocms-api-staging'
+# env:
+#   DOTNET_VERSION: '9.0.x'
+#   SOLUTION_PATH: './PortfolioCMS.sln'
+#   AZURE_RESOURCE_GROUP: 'rg-portfoliocms-staging'
+#   FRONTEND_APP_NAME: 'app-portfoliocms-frontend-staging'
+#   API_APP_NAME: 'app-portfoliocms-api-staging'
 
-jobs:
-  pre-deployment-checks:
-    name: Pre-deployment Checks
-    runs-on: ubuntu-latest
+# jobs:
+#   pre-deployment-checks:
+#     name: Pre-deployment Checks
+#     runs-on: ubuntu-latest
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore and build
-      run: |
-        dotnet restore ${{ env.SOLUTION_PATH }}
-        dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+#     - name: Restore and build
+#       run: |
+#         dotnet restore ${{ env.SOLUTION_PATH }}
+#         dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    - name: Run tests
-      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal
+#     - name: Run tests
+#       run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal
 
-    - name: Security scan placeholder
-      run: |
-        echo "🔒 Security scan would run here"
-        echo "Configure OWASP ZAP or similar security scanning tool"
+#     - name: Security scan placeholder
+#       run: |
+#         echo "🔒 Security scan would run here"
+#         echo "Configure OWASP ZAP or similar security scanning tool"
 
-  deploy-infrastructure:
-    name: Deploy Infrastructure
-    runs-on: ubuntu-latest
-    needs: pre-deployment-checks
-    if: success() || github.event.inputs.force_deploy == 'true'
+#   deploy-infrastructure:
+#     name: Deploy Infrastructure
+#     runs-on: ubuntu-latest
+#     needs: pre-deployment-checks
+#     if: success() || github.event.inputs.force_deploy == 'true'
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.0
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.6.0
 
-    - name: Azure Login (Placeholder)
-      run: |
-        echo "🔐 Azure login would happen here"
-        echo "Configure the following secrets:"
-        echo "- ARM_CLIENT_ID"
-        echo "- ARM_CLIENT_SECRET"
-        echo "- ARM_SUBSCRIPTION_ID"
-        echo "- ARM_TENANT_ID"
-        echo "- TF_VAR_sql_admin_password"
+#     - name: Azure Login (Placeholder)
+#       run: |
+#         echo "🔐 Azure login would happen here"
+#         echo "Configure the following secrets:"
+#         echo "- ARM_CLIENT_ID"
+#         echo "- ARM_CLIENT_SECRET"
+#         echo "- ARM_SUBSCRIPTION_ID"
+#         echo "- ARM_TENANT_ID"
+#         echo "- TF_VAR_sql_admin_password"
 
-    - name: Terraform Init
-      run: |
-        echo "🏗️ Terraform init would run here"
-        echo "terraform init"
-      working-directory: ./infrastructure
+#     - name: Terraform Init
+#       run: |
+#         echo "🏗️ Terraform init would run here"
+#         echo "terraform init"
+#       working-directory: ./infrastructure
 
-    - name: Terraform Plan
-      run: |
-        echo "📋 Terraform plan would run here"
-        echo "terraform plan -var-file='environments/staging/terraform.tfvars'"
-      working-directory: ./infrastructure
+#     - name: Terraform Plan
+#       run: |
+#         echo "📋 Terraform plan would run here"
+#         echo "terraform plan -var-file='environments/staging/terraform.tfvars'"
+#       working-directory: ./infrastructure
 
-    - name: Terraform Apply
-      run: |
-        echo "🚀 Terraform apply would run here"
-        echo "terraform apply -var-file='environments/staging/terraform.tfvars' -auto-approve"
-      working-directory: ./infrastructure
+#     - name: Terraform Apply
+#       run: |
+#         echo "🚀 Terraform apply would run here"
+#         echo "terraform apply -var-file='environments/staging/terraform.tfvars' -auto-approve"
+#       working-directory: ./infrastructure
 
-  build-and-publish:
-    name: Build and Publish Applications
-    runs-on: ubuntu-latest
-    needs: deploy-infrastructure
+#   build-and-publish:
+#     name: Build and Publish Applications
+#     runs-on: ubuntu-latest
+#     needs: deploy-infrastructure
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies
-      run: dotnet restore ${{ env.SOLUTION_PATH }}
+#     - name: Restore dependencies
+#       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-    - name: Build solution
-      run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+#     - name: Build solution
+#       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-    - name: Publish Frontend
-      run: dotnet publish src/PortfolioCMS.Frontend/PortfolioCMS.Frontend.csproj --configuration Release --output ./publish/frontend --no-build
+#     - name: Publish Frontend
+#       run: dotnet publish src/PortfolioCMS.Frontend/PortfolioCMS.Frontend.csproj --configuration Release --output ./publish/frontend --no-build
 
-    - name: Publish API
-      run: dotnet publish src/PortfolioCMS.API/PortfolioCMS.API.csproj --configuration Release --output ./publish/api --no-build
+#     - name: Publish API
+#       run: dotnet publish src/PortfolioCMS.API/PortfolioCMS.API.csproj --configuration Release --output ./publish/api --no-build
 
-    - name: Upload Frontend Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-staging
-        path: ./publish/frontend
-        retention-days: 30
+#     - name: Upload Frontend Artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: frontend-staging
+#         path: ./publish/frontend
+#         retention-days: 30
 
-    - name: Upload API Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: api-staging
-        path: ./publish/api
-        retention-days: 30
+#     - name: Upload API Artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: api-staging
+#         path: ./publish/api
+#         retention-days: 30
 
-  deploy-applications:
-    name: Deploy Applications to Azure
-    runs-on: ubuntu-latest
-    needs: build-and-publish
+#   deploy-applications:
+#     name: Deploy Applications to Azure
+#     runs-on: ubuntu-latest
+#     needs: build-and-publish
     
-    steps:
-    - name: Download Frontend Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: frontend-staging
-        path: ./frontend
+#     steps:
+#     - name: Download Frontend Artifact
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: frontend-staging
+#         path: ./frontend
 
-    - name: Download API Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: api-staging
-        path: ./api
+#     - name: Download API Artifact
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: api-staging
+#         path: ./api
 
-    - name: Azure Login (Placeholder)
-      run: |
-        echo "🔐 Azure login would happen here"
-        echo "az login --service-principal -u \$ARM_CLIENT_ID -p \$ARM_CLIENT_SECRET --tenant \$ARM_TENANT_ID"
+#     - name: Azure Login (Placeholder)
+#       run: |
+#         echo "🔐 Azure login would happen here"
+#         echo "az login --service-principal -u \$ARM_CLIENT_ID -p \$ARM_CLIENT_SECRET --tenant \$ARM_TENANT_ID"
 
-    - name: Deploy Frontend to Azure App Service
-      run: |
-        echo "🚀 Frontend deployment would run here"
-        echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --src frontend.zip"
+#     - name: Deploy Frontend to Azure App Service
+#       run: |
+#         echo "🚀 Frontend deployment would run here"
+#         echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.FRONTEND_APP_NAME }} --src frontend.zip"
 
-    - name: Deploy API to Azure App Service
-      run: |
-        echo "🚀 API deployment would run here"
-        echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --src api.zip"
+#     - name: Deploy API to Azure App Service
+#       run: |
+#         echo "🚀 API deployment would run here"
+#         echo "az webapp deployment source config-zip --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.API_APP_NAME }} --src api.zip"
 
-  run-database-migrations:
-    name: Run Database Migrations
-    runs-on: ubuntu-latest
-    needs: deploy-applications
+#   run-database-migrations:
+#     name: Run Database Migrations
+#     runs-on: ubuntu-latest
+#     needs: deploy-applications
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+#     - name: Setup .NET
+#       uses: actions/setup-dotnet@v4
+#       with:
+#         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install EF Core tools
-      run: dotnet tool install --global dotnet-ef
+#     - name: Install EF Core tools
+#       run: dotnet tool install --global dotnet-ef
 
-    - name: Run database migrations
-      run: |
-        echo "🗄️ Database migrations would run here"
-        echo "dotnet ef database update --project src/PortfolioCMS.DataAccess --startup-project src/PortfolioCMS.API --connection 'connection-string-from-keyvault'"
+#     - name: Run database migrations
+#       run: |
+#         echo "🗄️ Database migrations would run here"
+#         echo "dotnet ef database update --project src/PortfolioCMS.DataAccess --startup-project src/PortfolioCMS.API --connection 'connection-string-from-keyvault'"
 
-  post-deployment-tests:
-    name: Post-deployment Tests
-    runs-on: ubuntu-latest
-    needs: run-database-migrations
+#   post-deployment-tests:
+#     name: Post-deployment Tests
+#     runs-on: ubuntu-latest
+#     needs: run-database-migrations
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
 
-    - name: Health check - Frontend
-      run: |
-        echo "🏥 Frontend health check would run here"
-        echo "curl -f https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net/health || exit 1"
+#     - name: Health check - Frontend
+#       run: |
+#         echo "🏥 Frontend health check would run here"
+#         echo "curl -f https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net/health || exit 1"
 
-    - name: Health check - API
-      run: |
-        echo "🏥 API health check would run here"
-        echo "curl -f https://${{ env.API_APP_NAME }}.azurewebsites.net/api/v1/health || exit 1"
+#     - name: Health check - API
+#       run: |
+#         echo "🏥 API health check would run here"
+#         echo "curl -f https://${{ env.API_APP_NAME }}.azurewebsites.net/api/v1/health || exit 1"
 
-    - name: Run integration tests
-      run: |
-        echo "🧪 Integration tests would run here"
-        echo "dotnet test tests/Integration --configuration Release"
+#     - name: Run integration tests
+#       run: |
+#         echo "🧪 Integration tests would run here"
+#         echo "dotnet test tests/Integration --configuration Release"
 
-    - name: OWASP ZAP Security Scan (Placeholder)
-      run: |
-        echo "🔒 OWASP ZAP security scan would run here"
-        echo "Configure ZAP scan against staging environment:"
-        echo "- Frontend: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
-        echo "- API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
+#     - name: OWASP ZAP Security Scan (Placeholder)
+#       run: |
+#         echo "🔒 OWASP ZAP security scan would run here"
+#         echo "Configure ZAP scan against staging environment:"
+#         echo "- Frontend: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
+#         echo "- API: https://${{ env.API_APP_NAME }}.azurewebsites.net"
 
-  notify-deployment:
-    name: Notify Deployment Status
-    runs-on: ubuntu-latest
-    needs: [deploy-infrastructure, deploy-applications, run-database-migrations, post-deployment-tests]
-    if: always()
+#   notify-deployment:
+#     name: Notify Deployment Status
+#     runs-on: ubuntu-latest
+#     needs: [deploy-infrastructure, deploy-applications, run-database-migrations, post-deployment-tests]
+#     if: always()
     
-    steps:
-    - name: Notify success
-      if: ${{ needs.deploy-infrastructure.result == 'success' && needs.deploy-applications.result == 'success' && needs.run-database-migrations.result == 'success' && needs.post-deployment-tests.result == 'success' }}
-      run: |
-        echo "✅ Staging deployment successful!"
-        echo "Frontend URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
-        echo "API URL: https://${{ env.API_APP_NAME }}.azurewebsites.net"
-        echo "Ready for production deployment approval"
+#     steps:
+#     - name: Notify success
+#       if: ${{ needs.deploy-infrastructure.result == 'success' && needs.deploy-applications.result == 'success' && needs.run-database-migrations.result == 'success' && needs.post-deployment-tests.result == 'success' }}
+#       run: |
+#         echo "✅ Staging deployment successful!"
+#         echo "Frontend URL: https://${{ env.FRONTEND_APP_NAME }}.azurewebsites.net"
+#         echo "API URL: https://${{ env.API_APP_NAME }}.azurewebsites.net"
+#         echo "Ready for production deployment approval"
 
-    - name: Notify failure
-      if: ${{ needs.deploy-infrastructure.result == 'failure' || needs.deploy-applications.result == 'failure' || needs.run-database-migrations.result == 'failure' || needs.post-deployment-tests.result == 'failure' }}
-      run: |
-        echo "❌ Staging deployment failed!"
-        echo "Infrastructure: ${{ needs.deploy-infrastructure.result }}"
-        echo "Applications: ${{ needs.deploy-applications.result }}"
-        echo "Database Migrations: ${{ needs.run-database-migrations.result }}"
-        echo "Post-deployment Tests: ${{ needs.post-deployment-tests.result }}"
+#     - name: Notify failure
+#       if: ${{ needs.deploy-infrastructure.result == 'failure' || needs.deploy-applications.result == 'failure' || needs.run-database-migrations.result == 'failure' || needs.post-deployment-tests.result == 'failure' }}
+#       run: |
+#         echo "❌ Staging deployment failed!"
+#         echo "Infrastructure: ${{ needs.deploy-infrastructure.result }}"
+#         echo "Applications: ${{ needs.deploy-applications.result }}"
+#         echo "Database Migrations: ${{ needs.run-database-migrations.result }}"
+#         echo "Post-deployment Tests: ${{ needs.post-deployment-tests.result }}"

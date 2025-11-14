@@ -55,7 +55,12 @@
     - Add data annotations optimized for Azure SQL Database constraints
     - _Requirements: 7.1, 7.2, 8.3_
   
-  - [ ] 2.2 Configure Entity Framework Core 10 DbContext for Azure SQL
+  - [x] 2.2 Configure Entity Framework Core 10 DbContext for Azure SQL
+
+
+
+
+
     - Create ApplicationDbContext using EF Core 10 with C# 14 features
     - Configure entity relationships using Fluent API with proper indexing
     - Leverage C# 14 primary constructors and collection expressions where applicable
@@ -90,7 +95,12 @@
 
 
 
-  - [ ] 3.1 Set up API project foundation with Aspire integration
+  - [x] 3.1 Set up API project foundation with Aspire integration
+
+
+
+
+
     - Create ASP.NET Core Web API project with .NET Aspire service defaults
     - Configure Swagger/OpenAPI documentation with comprehensive schemas
     - Set up dependency injection container with service registrations
@@ -135,6 +145,9 @@
     - _Requirements: 1.1, 2.1, 2.2, 3.2, 5.1, 6.4, 11.4_
 
 - [ ] 4. Develop Frontend project with Blazor Server
+
+
+
   - [ ] 4.1 Set up Blazor Server project with Aspire integration
     - Create PortfolioCMS.Frontend project with Blazor Server components
     - Add Aspire service defaults for telemetry and health checks
