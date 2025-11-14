@@ -1,0 +1,274 @@
+@page "/admin/articles/create"
+@page "/admin/articles/edit/{Id:int}"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject IArticleService ArticleService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id.HasValue ? "Edit Article" : "Create Article") - Admin</PageTitle>
+
+<div class="admin-article-edit">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@(Id.HasValue ? "Edit Article" : "Create Article")</h1>
+        <a href="/admin/articles" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Articles
+        </a>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="@articleModel" OnValidSubmit="@SaveArticle">
+            <DataAnnotationsValidator />
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Article Content</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <InputText id="title" class="form-control" @bind-Value="articleModel.Title" />
+                                <ValidationMessage For="@(() => articleModel.Title)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="summary" class="form-label">Summary *</label>
+                                <InputTextArea id="summary" class="form-control" rows="3" @bind-Value="articleModel.Summary" />
+                                <ValidationMessage For="@(() => articleModel.Summary)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="content" class="form-label">Content *</label>
+                                <InputTextArea id="content" class="form-control" rows="15" @bind-Value="articleModel.Content" />
+                                <ValidationMessage For="@(() => articleModel.Content)" />
+                                <small class="text-muted">Note: Rich text editor integration can be added here (e.g., TinyMCE, Quill)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">SEO Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="metaDescription" class="form-label">Meta Description</label>
+                                <InputTextArea id="metaDescription" class="form-control" rows="2" @bind-Value="articleModel.MetaDescription" />
+                                <ValidationMessage For="@(() => articleModel.MetaDescription)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="metaKeywords" class="form-label">Meta Keywords</label>
+                                <InputText id="metaKeywords" class="form-control" @bind-Value="articleModel.MetaKeywords" />
+                                <ValidationMessage For="@(() => articleModel.MetaKeywords)" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Publish Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <InputSelect id="status" class="form-select" @bind-Value="articleModel.Status">
+                                    <option value="@ArticleStatus.Draft">Draft</option>
+                                    <option value="@ArticleStatus.Published">Published</option>
+                                    <option value="@ArticleStatus.Archived">Archived</option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="featuredImage" class="form-label">Featured Image URL</label>
+                                <InputText id="featuredImage" class="form-control" @bind-Value="articleModel.FeaturedImageUrl" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(articleModel.FeaturedImageUrl))
+                            {
+                                <div class="mb-3">
+                                    <img src="@articleModel.FeaturedImageUrl" class="img-fluid rounded" alt="Featured image preview" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Tags</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="tags" class="form-label">Tags (comma-separated)</label>
+                                <InputText id="tags" class="form-control" @bind-Value="tagsInput" placeholder="tag1, tag2, tag3" />
+                                <small class="text-muted">Enter tags separated by commas</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">
+                                    @errorMessage
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(successMessage))
+                            {
+                                <div class="alert alert-success">
+                                    @successMessage
+                                </div>
+                            }
+
+                            <button type="submit" class="btn btn-primary w-100 mb-2" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                <i class="bi bi-save"></i> Save Article
+                            </button>
+
+                            @if (Id.HasValue)
+                            {
+                                <a href="/blog/@Id" target="_blank" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-eye"></i> Preview
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private CreateArticleDto articleModel = new();
+    private string tagsInput = string.Empty;
+    private bool isLoading = false;
+    private bool isSaving = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            await LoadArticle();
+        }
+    }
+
+    private async Task LoadArticle()
+    {
+        isLoading = true;
+        try
+        {
+            var article = await ArticleService.GetArticleByIdAsync(Id!.Value);
+            if (article != null)
+            {
+                articleModel = new CreateArticleDto
+                {
+                    Title = article.Title,
+                    Content = article.Content,
+                    Summary = article.Summary,
+                    Status = article.Status,
+                    FeaturedImageUrl = article.FeaturedImageUrl,
+                    MetaDescription = article.MetaDescription,
+                    MetaKeywords = article.MetaKeywords,
+                    TagNames = article.Tags.Select(t => t.Name).ToList()
+                };
+                tagsInput = string.Join(", ", article.Tags.Select(t => t.Name));
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Failed to load article.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveArticle()
+    {
+        isSaving = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        try
+        {
+            // Parse tags
+            articleModel.TagNames = tagsInput
+                .Split(',')
+                .Select(t => t.Trim())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .ToList();
+
+            if (Id.HasValue)
+            {
+                // Update existing article
+                var updateDto = new UpdateArticleDto
+                {
+                    Title = articleModel.Title,
+                    Content = articleModel.Content,
+                    Summary = articleModel.Summary,
+                    Status = articleModel.Status,
+                    FeaturedImageUrl = articleModel.FeaturedImageUrl,
+                    MetaDescription = articleModel.MetaDescription,
+                    MetaKeywords = articleModel.MetaKeywords,
+                    TagNames = articleModel.TagNames
+                };
+
+                var result = await ArticleService.UpdateArticleAsync(Id.Value, updateDto);
+                if (result != null)
+                {
+                    successMessage = "Article updated successfully!";
+                }
+                else
+                {
+                    errorMessage = "Failed to update article.";
+                }
+            }
+            else
+            {
+                // Create new article
+                var result = await ArticleService.CreateArticleAsync(articleModel);
+                if (result != null)
+                {
+                    successMessage = "Article created successfully!";
+                    Navigation.NavigateTo($"/admin/articles/edit/{result.Id}");
+                }
+                else
+                {
+                    errorMessage = "Failed to create article.";
+                }
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "An error occurred while saving the article.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

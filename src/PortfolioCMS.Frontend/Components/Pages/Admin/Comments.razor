@@ -1,0 +1,163 @@
+@page "/admin/comments"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject ICommentService CommentService
+
+<PageTitle>Moderate Comments - Admin</PageTitle>
+
+<div class="admin-comments">
+    <h1 class="mb-4">Moderate Comments</h1>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (comments != null && comments.Any())
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Author</th>
+                                <th>Comment</th>
+                                <th>Article</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var comment in comments)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@comment.AuthorName</strong>
+                                        <br />
+                                        <small class="text-muted">@comment.AuthorEmail</small>
+                                    </td>
+                                    <td>
+                                        <p class="mb-0">@comment.Content</p>
+                                        @if (!string.IsNullOrEmpty(comment.IpAddress))
+                                        {
+                                            <small class="text-muted">IP: @comment.IpAddress</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/blog/@comment.ArticleId" target="_blank">
+                                            @comment.ArticleTitle
+                                        </a>
+                                    </td>
+                                    <td>@comment.SubmittedDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-@GetStatusBadgeClass(comment.Status)">
+                                            @comment.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            @if (comment.Status == CommentStatus.Pending)
+                                            {
+                                                <button class="btn btn-success" @onclick="() => ApproveComment(comment.Id)" title="Approve">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                                <button class="btn btn-warning" @onclick="() => RejectComment(comment.Id)" title="Reject">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            }
+                                            <button class="btn btn-danger" @onclick="() => DeleteComment(comment.Id)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <p class="mb-0">No pending comments to moderate.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CommentModerationDto>? comments;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        isLoading = true;
+        try
+        {
+            comments = await CommentService.GetPendingCommentsAsync();
+        }
+        catch (Exception)
+        {
+            comments = new List<CommentModerationDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ApproveComment(int commentId)
+    {
+        var success = await CommentService.ApproveCommentAsync(commentId);
+        if (success)
+        {
+            await LoadComments();
+        }
+    }
+
+    private async Task RejectComment(int commentId)
+    {
+        var success = await CommentService.RejectCommentAsync(commentId);
+        if (success)
+        {
+            await LoadComments();
+        }
+    }
+
+    private async Task DeleteComment(int commentId)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this comment?"))
+        {
+            var success = await CommentService.DeleteCommentAsync(commentId);
+            if (success)
+            {
+                await LoadComments();
+            }
+        }
+    }
+
+    private string GetStatusBadgeClass(CommentStatus status)
+    {
+        return status switch
+        {
+            CommentStatus.Approved => "success",
+            CommentStatus.Pending => "warning",
+            CommentStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+}

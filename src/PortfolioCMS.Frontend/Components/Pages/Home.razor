@@ -1,7 +1,202 @@
 ﻿@page "/"
+@layout PublicLayout
+@inject IProjectService ProjectService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Home - Portfolio</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="home-page">
+    <!-- Hero Section -->
+    <section class="hero-section bg-primary text-white py-5 mb-5">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold">Welcome to My Portfolio</h1>
+            <p class="lead">Full Stack Developer | Cloud Architect | Technology Enthusiast</p>
+            <div class="mt-4">
+                <a href="/blog" class="btn btn-light btn-lg me-2">View Blog</a>
+                <a href="/contact" class="btn btn-outline-light btn-lg">Contact Me</a>
+            </div>
+        </div>
+    </section>
 
-Welcome to your new app.
+    <!-- About Section -->
+    <section class="about-section mb-5">
+        <div class="container">
+            <h2 class="section-title mb-4">About Me</h2>
+            <div class="row">
+                <div class="col-lg-8">
+                    <p class="lead">
+                        Passionate software developer with expertise in building scalable, cloud-native applications.
+                        Experienced in .NET, Azure, and modern web technologies.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="projects-section mb-5">
+        <div class="container">
+            <h2 class="section-title mb-4">Featured Projects</h2>
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (projects != null && projects.Any())
+            {
+                <div class="row g-4">
+                    @foreach (var project in projects.Take(6))
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 shadow-sm">
+                                @if (!string.IsNullOrEmpty(project.ImageUrl))
+                                {
+                                    <img src="@project.ImageUrl" class="card-img-top" alt="@project.Title" style="height: 200px; object-fit: cover;">
+                                }
+                                <div class="card-body">
+                                    <h5 class="card-title">@project.Title</h5>
+                                    <p class="card-text">@project.Description</p>
+                                    @if (!string.IsNullOrEmpty(project.TechnologyStack))
+                                    {
+                                        <p class="text-muted small">
+                                            <strong>Tech:</strong> @project.TechnologyStack
+                                        </p>
+                                    }
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    @if (!string.IsNullOrEmpty(project.ProjectUrl))
+                                    {
+                                        <a href="@project.ProjectUrl" target="_blank" class="btn btn-sm btn-primary me-2">
+                                            View Project
+                                        </a>
+                                    }
+                                    @if (!string.IsNullOrEmpty(project.GitHubUrl))
+                                    {
+                                        <a href="@project.GitHubUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            GitHub
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No projects available at the moment.</p>
+            }
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section class="skills-section mb-5">
+        <div class="container">
+            <h2 class="section-title mb-4">Skills & Technologies</h2>
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Backend</h5>
+                            <p class="card-text">.NET, C#, ASP.NET Core, Entity Framework</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Frontend</h5>
+                            <p class="card-text">Blazor, JavaScript, HTML5, CSS3, Bootstrap</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Cloud</h5>
+                            <p class="card-text">Azure, Docker, Kubernetes, CI/CD</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Database</h5>
+                            <p class="card-text">SQL Server, Azure SQL, Entity Framework Core</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section class="experience-section mb-5">
+        <div class="container">
+            <h2 class="section-title mb-4">Experience</h2>
+            <div class="timeline">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Senior Software Developer</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Company Name | 2020 - Present</h6>
+                        <p class="card-text">
+                            Leading development of cloud-native applications using .NET and Azure.
+                            Architecting scalable solutions and mentoring junior developers.
+                        </p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Software Developer</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Previous Company | 2018 - 2020</h6>
+                        <p class="card-text">
+                            Developed web applications using ASP.NET Core and modern JavaScript frameworks.
+                            Implemented CI/CD pipelines and automated testing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Education Section -->
+    <section class="education-section mb-5">
+        <div class="container">
+            <h2 class="section-title mb-4">Education</h2>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Bachelor of Science in Computer Science</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">University Name | 2014 - 2018</h6>
+                    <p class="card-text">
+                        Graduated with honors. Focused on software engineering, algorithms, and distributed systems.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private List<ProjectDto>? projects;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            projects = await ProjectService.GetProjectsAsync();
+        }
+        catch (Exception)
+        {
+            // Log error
+            projects = new List<ProjectDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
+

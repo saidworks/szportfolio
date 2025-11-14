@@ -1,0 +1,169 @@
+@page "/contact"
+@layout PublicLayout
+
+<PageTitle>Contact - Portfolio</PageTitle>
+
+<div class="contact-page">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h1 class="mb-4">Get In Touch</h1>
+                <p class="lead mb-5">
+                    Have a question or want to work together? Feel free to reach out!
+                </p>
+
+                <EditForm Model="@contactForm" OnValidSubmit="@SubmitContactForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger mb-3" />
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name *</label>
+                        <InputText id="name" class="form-control" @bind-Value="contactForm.Name" placeholder="Your name" />
+                        <ValidationMessage For="@(() => contactForm.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <InputText id="email" type="email" class="form-control" @bind-Value="contactForm.Email" placeholder="your.email@example.com" />
+                        <ValidationMessage For="@(() => contactForm.Email)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject *</label>
+                        <InputText id="subject" class="form-control" @bind-Value="contactForm.Subject" placeholder="What's this about?" />
+                        <ValidationMessage For="@(() => contactForm.Subject)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message *</label>
+                        <InputTextArea id="message" class="form-control" rows="6" @bind-Value="contactForm.Message" placeholder="Your message..." />
+                        <ValidationMessage For="@(() => contactForm.Message)" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(submitMessage))
+                    {
+                        <div class="alert @(submitSuccess ? "alert-success" : "alert-danger") mb-3">
+                            @submitMessage
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-primary btn-lg" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Send Message
+                    </button>
+                </EditForm>
+
+                <!-- Contact Information -->
+                <div class="mt-5 pt-5 border-top">
+                    <h3 class="mb-4">Other Ways to Connect</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-envelope"></i> Email
+                                    </h5>
+                                    <p class="card-text">
+                                        <a href="mailto:contact@example.com">contact@example.com</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-linkedin"></i> LinkedIn
+                                    </h5>
+                                    <p class="card-text">
+                                        <a href="https://linkedin.com/in/yourprofile" target="_blank">Connect on LinkedIn</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-github"></i> GitHub
+                                    </h5>
+                                    <p class="card-text">
+                                        <a href="https://github.com/yourusername" target="_blank">View my projects</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-twitter"></i> Twitter
+                                    </h5>
+                                    <p class="card-text">
+                                        <a href="https://twitter.com/yourusername" target="_blank">Follow me on Twitter</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ContactFormModel contactForm = new();
+    private bool isSubmitting = false;
+    private string submitMessage = string.Empty;
+    private bool submitSuccess = false;
+
+    private async Task SubmitContactForm()
+    {
+        isSubmitting = true;
+        submitMessage = string.Empty;
+
+        try
+        {
+            // Simulate API call - in real implementation, this would call an API endpoint
+            await Task.Delay(1000);
+            
+            submitSuccess = true;
+            submitMessage = "Thank you for your message! I'll get back to you as soon as possible.";
+            
+            // Reset form
+            contactForm = new ContactFormModel();
+        }
+        catch (Exception)
+        {
+            submitSuccess = false;
+            submitMessage = "An error occurred while sending your message. Please try again or contact me directly via email.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    public class ContactFormModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Subject is required")]
+        [MaxLength(200)]
+        public string Subject { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Message is required")]
+        [MaxLength(2000)]
+        public string Message { get; set; } = string.Empty;
+    }
+}
