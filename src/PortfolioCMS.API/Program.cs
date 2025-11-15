@@ -5,6 +5,8 @@ using PortfolioCMS.DataAccess.Context;
 using PortfolioCMS.DataAccess.Entities;
 using PortfolioCMS.DataAccess.Repositories;
 using PortfolioCMS.API.Services;
+using PortfolioCMS.API.Middleware;
+using PortfolioCMS.API.Configuration;
 using FluentValidation;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,6 +17,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Azure Key Vault configuration (must be before other configurations)
+builder.Configuration.AddAzureKeyVaultConfiguration(builder.Configuration, builder.Environment);
 
 // Add Aspire service defaults (OpenTelemetry, health checks, service discovery)
 builder.AddServiceDefaults();
@@ -134,21 +139,40 @@ else
     builder.Services.AddScoped<IObservabilityService, NoOpObservabilityService>();
 }
 
+// Add Azure Key Vault service
+builder.Services.AddSingleton<IKeyVaultService, KeyVaultService>();
+
+// Validate security configuration
+AzureSecurityConfiguration.ValidateAzureSecurityConfiguration(builder.Configuration, builder.Environment);
+
 // Add FluentValidation
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
 // Add controllers
 builder.Services.AddControllers();
 
-// Add CORS
+// Add CORS with enhanced security
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy", policy =>
     {
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://localhost:7001" })
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+            ?? new[] { "https://localhost:7001" };
+        
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+              .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept")
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10))
+              .WithExposedHeaders("X-Pagination", "X-Total-Count");
+    });
+
+    // Stricter policy for public endpoints
+    options.AddPolicy("PublicPolicy", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .WithMethods("GET", "OPTIONS")
+              .WithHeaders("Content-Type", "Accept");
     });
 });
 
@@ -225,6 +249,10 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+
+// Global exception handler (must be first)
+app.UseGlobalExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -240,21 +268,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Security headers middleware
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Append("X-Frame-Options", "DENY");
-    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
-    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-    
-    if (!app.Environment.IsDevelopment())
-    {
-        context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    }
-    
-    await next();
-});
+// Security middleware stack
+app.UseSecurityHeaders();
+app.UseInputValidation();
+app.UseRateLimiting();
 
 app.UseHttpsRedirection();
 
