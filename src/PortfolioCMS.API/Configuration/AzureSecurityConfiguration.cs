@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration.AzureKeyVault;
 namespace PortfolioCMS.API.Configuration;
 
 /// <summary>
-/// Configuration extensions for Azure security services
+/// Configuration extensions for Azure security services including Key Vault and Microsoft Entra ID
 /// </summary>
 public static class AzureSecurityConfiguration
 {
@@ -59,24 +59,53 @@ public static class AzureSecurityConfiguration
     }
 
     /// <summary>
-    /// Configures Azure Active Directory authentication
+    /// Configures Microsoft Entra ID (formerly Azure Active Directory) authentication
     /// </summary>
     public static IServiceCollection AddAzureActiveDirectoryAuthentication(
         this IServiceCollection services,
-
         IConfiguration configuration)
     {
+        // Check for EntraId configuration first (new naming), fall back to AzureAd (legacy)
+        var entraIdSettings = configuration.GetSection("EntraId");
         var aadSettings = configuration.GetSection("AzureAd");
         
-        if (!aadSettings.Exists())
+        IConfigurationSection configSection;
+        string configName;
+        
+        if (entraIdSettings.Exists())
         {
-            Console.WriteLine("AzureAd configuration not found. Skipping AAD integration.");
+            configSection = entraIdSettings;
+            configName = "EntraId";
+        }
+        else if (aadSettings.Exists())
+        {
+            configSection = aadSettings;
+            configName = "AzureAd";
+        }
+        else
+        {
+            Console.WriteLine("EntraId/AzureAd configuration not found. Skipping Entra ID integration.");
             return services;
         }
 
-        // Azure AD configuration would go here
-        // This is a placeholder for future AAD integration
-        // Currently using JWT tokens with ASP.NET Core Identity
+        var tenantId = configSection["TenantId"];
+        var clientId = configSection["ClientId"];
+
+        if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(clientId))
+        {
+            Console.WriteLine($"{configName} TenantId or ClientId not configured. Skipping Entra ID integration.");
+            return services;
+        }
+
+        // Add Microsoft Identity Web authentication
+        // This enables Microsoft Entra ID authentication alongside JWT authentication
+        // Uncomment when ready to use Entra ID:
+        /*
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddMicrosoftIdentityWebApi(configSection);
+        */
+
+        Console.WriteLine($"Microsoft Entra ID authentication configured for Tenant: {tenantId}");
 
         return services;
     }

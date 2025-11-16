@@ -1,3 +1,6 @@
+# specs for kiro
+.kiro/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -475,3 +478,14 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# Infrastructure planning and execution (contains sensitive data)
+.infra/
+# This directory stores:
+# - Local infrastructure planning documents
+# - Deployment execution logs
+# - Connection strings and database credentials
+# - Azure CLI command history
+# - Terraform/OpenTofu state backups
+# - Key Vault secrets for local testing
+# - Any other sensitive infrastructure-related files

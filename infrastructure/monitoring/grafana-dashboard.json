@@ -1,0 +1,430 @@
+{
+  "dashboard": {
+    "title": "Portfolio CMS - Production Monitoring",
+    "tags": ["portfoliocms", "production", "aspire"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate (req/s)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_total{job=\"portfoliocms-api\"}[5m])",
+            "legendFormat": "API - {{method}} {{uri}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_server_requests_total{job=\"portfoliocms-frontend\"}[5m])",
+            "legendFormat": "Frontend - {{method}} {{uri}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Response Time (P95)",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{job=\"portfoliocms-api\"}[5m]))",
+            "legendFormat": "API P95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket{job=\"portfoliocms-frontend\"}[5m]))",
+            "legendFormat": "Frontend P95",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (%)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_total{job=\"portfoliocms-api\",status=~\"5..\"}[5m]) / rate(http_server_requests_total{job=\"portfoliocms-api\"}[5m]) * 100",
+            "legendFormat": "API 5xx Error Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_server_requests_total{job=\"portfoliocms-frontend\",status=~\"5..\"}[5m]) / rate(http_server_requests_total{job=\"portfoliocms-frontend\"}[5m]) * 100",
+            "legendFormat": "Frontend 5xx Error Rate",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Error Rate"
+          }
+        ],
+        "alert": {
+          "name": "High Error Rate",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "message": "Error rate is above 5% for Portfolio CMS",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 4,
+        "title": "Container CPU Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{container=\"portfoliocms-api\"}[5m]) * 100",
+            "legendFormat": "API CPU %",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{container=\"portfoliocms-frontend\"}[5m]) * 100",
+            "legendFormat": "Frontend CPU %",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU Usage",
+            "max": 100
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Container Memory Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{container=\"portfoliocms-api\"} / 1024 / 1024",
+            "legendFormat": "API Memory (MB)",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_usage_bytes{container=\"portfoliocms-frontend\"} / 1024 / 1024",
+            "legendFormat": "Frontend Memory (MB)",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "decmbytes",
+            "label": "Memory"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "database_connection_pool_active{job=\"portfoliocms-api\"}",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "database_connection_pool_idle{job=\"portfoliocms-api\"}",
+            "legendFormat": "Idle Connections",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Connections"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Top Endpoints by Request Count",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (uri, method) (rate(http_server_requests_total{job=\"portfoliocms-api\"}[1h])))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "uri": 0,
+                "method": 1,
+                "Value": 2
+              },
+              "renameByName": {
+                "uri": "Endpoint",
+                "method": "Method",
+                "Value": "Requests/sec"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Slowest Database Queries",
+        "type": "table",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, avg by (query) (database_query_duration_seconds{job=\"portfoliocms-api\"}))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "query": 0,
+                "Value": 1
+              },
+              "renameByName": {
+                "query": "Query",
+                "Value": "Avg Duration (s)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Active Users (Last 5 min)",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "count(count by (user_id) (http_server_requests_total{job=\"portfoliocms-frontend\"}[5m]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 10,
+        "title": "Total Requests (Last Hour)",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(http_server_requests_total{job=~\"portfoliocms-.*\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 11,
+        "title": "Avg Response Time (Last Hour)",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "avg(rate(http_server_request_duration_seconds_sum{job=~\"portfoliocms-.*\"}[1h]) / rate(http_server_request_duration_seconds_count{job=~\"portfoliocms-.*\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name",
+          "unit": "s"
+        }
+      },
+      {
+        "id": 12,
+        "title": "Error Count (Last Hour)",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(http_server_requests_total{job=~\"portfoliocms-.*\",status=~\"5..\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "environment",
+          "type": "custom",
+          "options": [
+            {
+              "text": "Production",
+              "value": "production"
+            },
+            {
+              "text": "Staging",
+              "value": "staging"
+            }
+          ],
+          "current": {
+            "text": "Production",
+            "value": "production"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "iconColor": "blue",
+          "tags": ["deployment"]
+        }
+      ]
+    }
+  }
+}

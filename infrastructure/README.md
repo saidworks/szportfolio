@@ -17,6 +17,126 @@ The infrastructure deploys a three-tier architecture on Azure:
 2. **tofu/OpenTofu** - Install tofu or OpenTofu
 3. **Azure Subscription** - Active Azure subscription with appropriate permissions
 
+## Secrets Management with .infra/ Directory
+
+⚠️ **IMPORTANT**: The `.infra/` directory in the workspace root is gitignored and used for storing sensitive infrastructure files.
+
+### What is .infra/?
+
+The `.infra/` directory is a local-only folder (excluded from version control) where you should store:
+
+- **Scripts with actual credentials** - Deployment scripts, Azure CLI scripts with real values
+- **Infrastructure planning documents** - Architecture diagrams with real IPs, network topology, service principals
+- **Terraform/OpenTofu variable files** - *.tfvars files with actual secrets and resource names
+- **Deployment logs** - Terraform apply logs, Azure CLI command history, deployment timestamps
+- **Exported secrets** - Key Vault secret backups, certificates, SSH keys, API tokens
+
+### Directory Structure
+
+```
+.infra/
+├── README.md                           # Comprehensive guide for .infra/ usage
+├── scripts/
+│   ├── deploy-production.ps1          # Real deployment script with credentials
+│   ├── setup-keyvault-secrets.ps1     # Populate Key Vault with actual secrets
+│   ├── rotate-database-password.ps1   # Database password rotation script
+│   └── backup-keyvault-secrets.ps1    # Export Key Vault secrets for backup
+├── planning/
+│   ├── production-architecture.md     # Production architecture with real details
+│   ├── network-topology.md            # Network configuration with actual IPs
+│   ├── service-principals.md          # Service principal credentials
+│   └── resource-inventory.md          # Complete resource list with IDs
+├── terraform/
+│   ├── production.tfvars              # Real Terraform variables for production
+│   ├── staging.tfvars                 # Real Terraform variables for staging
+│   ├── development.tfvars             # Real Terraform variables for development
+│   └── backend-config.tfvars          # Backend storage account configuration
+├── logs/
+│   ├── deployment-YYYY-MM-DD.log      # Deployment execution logs
+│   ├── azure-cli-history.txt          # Azure CLI command history
+│   └── terraform-apply-YYYY-MM-DD.log # Terraform apply logs
+└── secrets/
+    ├── keyvault-backup-YYYY-MM-DD.json # Key Vault secret exports
+    ├── certificates/                   # SSL/TLS certificates
+    └── service-principals/             # Service principal credentials
+```
+
+### Workflow for Managing Secrets
+
+1. **Create scripts with real values in `.infra/`** first
+2. **Test thoroughly** in your local environment
+3. **Create sanitized templates** in the main repository (e.g., `scripts/*.template.ps1`)
+4. **Replace actual values** with placeholders:
+   - `<SUBSCRIPTION_ID>`
+   - `<RESOURCE_GROUP_NAME>`
+   - `<SQL_ADMIN_PASSWORD>`
+   - `<KEY_VAULT_NAME>`
+   - `<STORAGE_ACCOUNT_KEY>`
+
+### Example: Script Template Pattern
+
+**Working version** (`.infra/scripts/deploy-production.ps1`):
+```powershell
+$SUBSCRIPTION_ID = "12345678-1234-1234-1234-123456789abc"
+$SQL_PASSWORD = "MySecureP@ssw0rd123!"
+$KEY_VAULT_NAME = "kv-portfoliocms-prod-eastus"
+
+az account set --subscription $SUBSCRIPTION_ID
+az keyvault secret set --vault-name $KEY_VAULT_NAME --name "SqlAdminPassword" --value $SQL_PASSWORD
+```
+
+**Template version** (`scripts/deploy-production.template.ps1`):
+```powershell
+# Template: Replace placeholders with actual values before use
+$SUBSCRIPTION_ID = "<YOUR_SUBSCRIPTION_ID>"
+$SQL_PASSWORD = "<GENERATE_SECURE_PASSWORD>"
+$KEY_VAULT_NAME = "<YOUR_KEY_VAULT_NAME>"
+
+az account set --subscription $SUBSCRIPTION_ID
+az keyvault secret set --vault-name $KEY_VAULT_NAME --name "SqlAdminPassword" --value $SQL_PASSWORD
+```
+
+### Security Best Practices
+
+✅ **DO:**
+- Store all sensitive files in `.infra/`
+- Use strong, randomly generated passwords
+- Rotate credentials regularly
+- Keep deployment logs for audit purposes
+- Use Azure Key Vault for production secrets
+- Retrieve secrets from Key Vault in CI/CD pipelines
+
+❌ **DON'T:**
+- Commit `.infra/` contents to version control
+- Share `.infra/` files via email or chat
+- Store production credentials in development scripts
+- Use the same passwords across environments
+- Leave credentials in clipboard or terminal history
+
+### Verification
+
+To verify the `.infra/` directory is properly gitignored:
+
+```bash
+# Should output: .infra/
+git check-ignore .infra/
+
+# Should show no files
+git status .infra/
+```
+
+### Emergency: Secrets Committed to Git
+
+If you accidentally commit secrets to git:
+
+1. **Immediately rotate all exposed credentials**
+2. **Remove from git history** using `git filter-branch` or BFG Repo-Cleaner
+3. **Force push** to remote repository (coordinate with team)
+4. **Notify security team** if production credentials were exposed
+5. **Review access logs** for unauthorized access
+
+For comprehensive documentation, see **[.infra/README.md](../.infra/README.md)** in the workspace root.
+
 ## Quick Start
 
 ⚠️ **IMPORTANT**: Before deploying infrastructure, you MUST complete the manual setup steps. See [MANUAL_SETUP_GUIDE.md](./MANUAL_SETUP_GUIDE.md) for detailed instructions.

@@ -142,6 +142,12 @@ else
 // Add Azure Key Vault service
 builder.Services.AddSingleton<IKeyVaultService, KeyVaultService>();
 
+// Add Azure AD service (optional - for future Azure AD integration)
+builder.Services.AddScoped<IAzureAdService, AzureAdService>();
+
+// Configure Azure AD authentication (optional - currently using JWT)
+builder.Services.AddAzureActiveDirectoryAuthentication(builder.Configuration);
+
 // Validate security configuration
 AzureSecurityConfiguration.ValidateAzureSecurityConfiguration(builder.Configuration, builder.Environment);
 
@@ -326,3 +332,6 @@ public class EnumSchemaFilter : ISchemaFilter
         }
     }
 }
+
+// Make the implicit Program class accessible to tests
+public partial class Program { }

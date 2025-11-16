@@ -42,34 +42,67 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Install SonarCloud scanner
-      run: |
-        echo "📊 SonarCloud scanner installation would happen here"
-        echo "dotnet tool install --global dotnet-sonarscanner"
-        echo "Configure SONAR_TOKEN secret in repository settings"
+      run: dotnet tool install --global dotnet-sonarscanner
 
     - name: Restore dependencies
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
     - name: Begin SonarCloud analysis
+      if: ${{ secrets.SONAR_TOKEN != '' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
-        echo "🔍 SonarCloud analysis would begin here"
-        echo "dotnet sonarscanner begin /k:'your-project-key' /o:'your-organization' /d:sonar.token='\${{ secrets.SONAR_TOKEN }}' /d:sonar.host.url='https://sonarcloud.io' /d:sonar.cs.opencover.reportsPaths='**/coverage.opencover.xml'"
+        dotnet sonarscanner begin \
+          /k:"PortfolioCMS" \
+          /o:"your-organization" \
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+          /d:sonar.host.url="https://sonarcloud.io" \
+          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+          /d:sonar.coverage.exclusions="**/Program.cs,**/Startup.cs,**/Migrations/**,**/*Dto.cs,**/*Model.cs,**/*Entity.cs" \
+          /d:sonar.exclusions="**/bin/**,**/obj/**,**/wwwroot/lib/**,**/Migrations/**,**/*.Designer.cs" \
+          /d:sonar.security.hotspots.enabled=true \
+          /d:sonar.qualitygate.wait=true
 
     - name: Build solution
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
     - name: Run tests with coverage
-      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults/ -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      run: |
+        dotnet test ${{ env.SOLUTION_PATH }} \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults/ \
+          --logger trx \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
     - name: End SonarCloud analysis
-      run: |
-        echo "📊 SonarCloud analysis would end here"
-        echo "dotnet sonarscanner end /d:sonar.token='\${{ secrets.SONAR_TOKEN }}'"
+      if: ${{ secrets.SONAR_TOKEN != '' }}
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-    - name: SonarCloud Quality Gate check
+    - name: SonarCloud not configured
+      if: ${{ secrets.SONAR_TOKEN == '' }}
       run: |
-        echo "🚪 SonarCloud Quality Gate check would happen here"
-        echo "This step would fail the build if quality gate conditions are not met"
+        echo "⚠️ SonarCloud analysis skipped - SONAR_TOKEN not configured"
+        echo ""
+        echo "To enable SonarCloud scanning:"
+        echo "1. Go to https://sonarcloud.io and sign in with GitHub"
+        echo "2. Create a new organization or use existing one"
+        echo "3. Import this repository as a new project"
+        echo "4. Generate a token in My Account > Security"
+        echo "5. Add SONAR_TOKEN to GitHub repository secrets"
+        echo "6. Update 'your-organization' in this workflow with your SonarCloud organization key"
+        echo ""
+        echo "SonarCloud provides:"
+        echo "- Static code analysis with security rules"
+        echo "- Code quality metrics and technical debt tracking"
+        echo "- Security vulnerability detection"
+        echo "- Code coverage visualization"
+        echo "- Quality gate enforcement"
 
 # Configuration Instructions:
 # 1. Go to https://sonarcloud.io and create an account
