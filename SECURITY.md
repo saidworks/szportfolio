@@ -67,8 +67,13 @@ Portfolio CMS implements multiple layers of security:
 
 - **Application Insights**: Real-time monitoring and alerting
 - **Security Scanning**: Automated OWASP ZAP and SonarCloud scans
-- **Dependency Scanning**: Regular vulnerability checks on dependencies
+- **Dependency Scanning**: Snyk and OWASP Dependency Check
+- **Code Analysis**: GitHub CodeQL semantic security analysis
+- **Container Scanning**: Trivy vulnerability scanning
+- **SSL/TLS Testing**: testssl.sh configuration validation
 - **Audit Logging**: Comprehensive logging of security-relevant events
+
+For detailed information about security scanning, see [Security Scanning Documentation](docs/security/SECURITY_SCANNING.md)
 
 ### Development Security
 
@@ -116,11 +121,20 @@ If you're contributing to Portfolio CMS, please follow these security guidelines
 
 ## Security Scanning Schedule
 
-- **Static Analysis (SonarCloud)**: On every commit and pull request
-- **Dependency Scanning**: Daily automated scans
-- **OWASP ZAP Baseline**: Weekly automated scans
-- **OWASP ZAP Full Scan**: Monthly manual scans
-- **Penetration Testing**: Quarterly professional assessments
+| Scan Type | Frequency | Trigger |
+|-----------|-----------|---------|
+| SonarCloud Static Analysis | On push/PR | Automatic |
+| Snyk Dependency Scanning | On push/PR + Daily | Automatic |
+| GitHub CodeQL | On push/PR | Automatic |
+| OWASP Dependency Check | Daily | Scheduled |
+| OWASP ZAP Baseline | Weekly (Sundays) | Scheduled |
+| OWASP ZAP Full Scan | On-demand | Manual |
+| Trivy Container Scanning | On container build | Automatic |
+| SSL/TLS Configuration | Daily | Scheduled |
+| Security Headers Check | Daily | Scheduled |
+| Penetration Testing | Quarterly | Professional |
+
+For setup instructions, see [Security Scanning Setup Guide](docs/security/SECURITY_SCANNING_SETUP.md)
 
 ## Compliance
 

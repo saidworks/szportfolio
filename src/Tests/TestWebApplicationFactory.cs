@@ -4,9 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PortfolioCMS.DataAccess.Context;
+
 namespace PortfolioCMS.Tests;
 
-public class TestWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup> where TStartup : class
+public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
